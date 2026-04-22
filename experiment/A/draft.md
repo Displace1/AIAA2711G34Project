@@ -1,11 +1,42 @@
+## Experiment 1: Direct Monte Carlo vs. Importance Sampling (Basic Comparison)
+
+**Goal**: Gain intuition for variance reduction by concentrating samples in "important" regions.
+
+**Problem**: Compute the integral
+\[
+I = \int_0^1 e^x \, dx = e - 1 \approx 1.718281828459045
+\]
+Although it has an analytical solution, we deliberately express it as an expectation:
+\[
+I = \int_0^1 e^x \cdot 1 \, dx = \mathbb{E}_{p}[f(X)],
+\]
+where \(p(x) = \mathbf{1}_{[0,1]}\) is the uniform density on \([0,1]\) and \(f(x) = e^x\).
+
+We will compare three estimators:
+
+1. **Direct Monte Carlo (MC)**  
+   Sample \(X_i \sim U(0,1)\), estimate \(\hat{I}_{\text{MC}} = \frac{1}{N}\sum_{i=1}^N e^{X_i}\).
+
+2. **Optimal Importance Sampling (IS-opt)**  
+   Use the proposal \(q_{\text{opt}}(x) = \frac{e^x}{e-1}\) on \([0,1]\).  
+   Importance weights: \(w(x) = \frac{p(x)}{q_{\text{opt}}(x)} = \frac{e-1}{e^x}\).  
+   Estimate: \(\hat{I}_{\text{IS-opt}} = \frac{1}{N}\sum_{i=1}^N f(X_i) w(X_i)\).
+
+3. **Suboptimal Importance Sampling (IS-bad)**  
+   Use a linear proposal \(q_{\text{bad}}(x) = 2x\) on \([0,1]\).  
+   Importance weights: \(w(x) = \frac{1}{2x}\).  
+   Estimate: \(\hat{I}_{\text{IS-bad}} = \frac{1}{N}\sum_{i=1}^N f(X_i) w(X_i)\).
+
+We will run many independent repetitions for different sample sizes \(N\) and analyze the variance of each estimator.
+
+---
+
+### Complete Python Implementation
+
+```python
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
-import os
-
-# Create results directory if it doesn't exist
-results_dir = '../results'
-os.makedirs(results_dir, exist_ok=True)
 
 # Set random seed for reproducibility
 np.random.seed(42)
@@ -111,27 +142,16 @@ fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 # Plot 1: Variance vs. N (log-log scale)
 ax = axes[0]
 ax.loglog(N_list, var_mc, 'o-', label='Direct MC', linewidth=2, markersize=8)
-ax.loglog(N_list, var_is_bad, '^-', label='IS (bad q)', linewidth=2, markersize=8)
 ax.loglog(N_list, var_is_opt, 's-', label='IS (optimal q)', linewidth=2, markersize=8)
-
+ax.loglog(N_list, var_is_bad, '^-', label='IS (bad q)', linewidth=2, markersize=8)
 # Add reference line with slope -1 (1/N convergence)
 ref_N = np.array(N_list)
 ax.loglog(ref_N, var_mc[0] * (ref_N[0] / ref_N), 'k--', alpha=0.5, label=r'$\propto 1/N$')
-
-# Set a reasonable lower bound for y-axis to prevent extreme flattening
-# The optimal IS variance is theoretically zero (only floating-point noise)
-ax.set_ylim(bottom=1e-20, top=1e-0)   # Adjust bottom as needed
-
 ax.set_xlabel('Number of samples N', fontsize=12)
 ax.set_ylabel('Empirical variance', fontsize=12)
 ax.set_title('Variance Comparison (log-log scale)', fontsize=14)
 ax.legend(fontsize=10)
 ax.grid(True, alpha=0.3)
-
-# Add a text annotation explaining the near-zero variance of optimal IS
-ax.text(0.05, 0.05, 'Optimal IS variance ≈ 0 (floating‑point noise)',
-        transform=ax.transAxes, fontsize=9, style='italic',
-        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
 # Plot 2: Mean estimate convergence
 ax = axes[1]
@@ -146,8 +166,7 @@ ax.legend(fontsize=10)
 ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
-# Save to results directory
-plt.savefig(os.path.join(results_dir, 'experiment1_results.png'), dpi=150)
+plt.savefig('experiment1_results.png', dpi=150)
 plt.show()
 
 # ====================================================
@@ -192,85 +211,41 @@ axes2[1].legend()
 axes2[1].set_xlim([0, 20])  # Zoom in to see bulk
 
 plt.tight_layout()
-# Save to results directory
-plt.savefig(os.path.join(results_dir, 'experiment1_weights.png'), dpi=150)
+plt.savefig('experiment1_weights.png', dpi=150)
 plt.show()
 
 print("\n--- Weight statistics (N={}) ---".format(N_demo))
 print(f"Optimal q: mean weight = {np.mean(w_opt_demo):.4f}, std = {np.std(w_opt_demo):.4f}, max = {np.max(w_opt_demo):.4f}")
 print(f"Bad q    : mean weight = {np.mean(w_bad_demo):.4f}, std = {np.std(w_bad_demo):.4f}, max = {np.max(w_bad_demo):.4f}")
+```
 
-# ====================================================
-# 6. Weighted histograms: reconstructing target distribution p(x)
-# ====================================================
+---
 
-N_hist = 100000  # Use a large number for smooth histograms
+### Expected Observations and Explanation
 
-# Generate samples from each proposal
-x_unif = sample_uniform(N_hist)
-x_opt = sample_optimal_q(N_hist)
-x_bad = sample_bad_q(N_hist)
+When you run the code, you should see:
 
-# Compute importance weights for each sample
-# Target p(x) = 1 on [0,1] for all x
-w_unif = np.ones_like(x_unif)  # uniform is already p, weights = 1
-w_opt = (np.exp(1) - 1) / np.exp(x_opt)
-w_bad = 1.0 / (2.0 * x_bad)
+1. **Variance Plot (log‑log)**  
+   - The variance of **Direct MC** decreases as \(1/N\) (a straight line with slope –1).  
+   - The variance of **IS with optimal \(q\)** is **extremely small** (often orders of magnitude lower) for all \(N\). In fact, the optimal proposal achieves **zero variance** in theory because \(f(x) w(x)\) is constant for all \(x\). Numerical noise is only due to floating‑point precision.  
+   - The variance of **IS with bad \(q\)** is **higher** than that of Direct MC, demonstrating that a poorly chosen proposal can *increase* variance instead of reducing it.
 
-# Create figure with three subplots
-fig3, axes3 = plt.subplots(1, 3, figsize=(15, 4))
+2. **Mean Estimate Convergence**  
+   - All three estimators converge to the true value \(e-1 \approx 1.71828\).  
+   - The optimal IS estimate is extremely stable even for very small \(N\), while the bad IS estimate fluctuates heavily.
 
-# Common x grid for target density curve
-x_grid = np.linspace(0, 1, 500)
-p_target = np.ones_like(x_grid)
+3. **Weight Distribution Histograms**  
+   - For the optimal \(q\), the weights are tightly clustered around a constant value (since \(f(x) w(x)\) is constant).  
+   - For the bad \(q\), the weight distribution has a long tail toward large values (some weights become huge when \(x\) is close to 0), which inflates the variance. The mean weight remains 1 (unbiasedness), but the variance of the estimator suffers greatly.
 
-# Subplot 1: Uniform sampling (weights = 1)
-axes3[0].hist(x_unif, bins=50, density=True, alpha=0.6, color='blue', 
-              label='Unweighted samples', edgecolor='black', linewidth=0.5)
-axes3[0].plot(x_grid, p_target, 'r-', linewidth=2, label='Target p(x)=1')
-axes3[0].set_title('Direct MC (Uniform sampling)\nWeights = 1')
-axes3[0].set_xlabel('x')
-axes3[0].set_ylabel('Density')
-axes3[0].legend()
-axes3[0].grid(True, alpha=0.3)
-axes3[0].set_ylim(0, 1.5)   # target is 1, leave some headroom
+This experiment vividly illustrates the power of a well‑matched proposal distribution and the danger of using a proposal with thinner tails than the target.
 
-# Subplot 2: Optimal proposal q, weighted histogram
-axes3[1].hist(x_opt, bins=50, weights=w_opt, density=True, 
-              alpha=0.6, color='green', label='Weighted histogram', 
-              edgecolor='black', linewidth=0.5)
-axes3[1].plot(x_grid, p_target, 'r-', linewidth=2, label='Target p(x)=1')
-axes3[1].set_title('IS optimal q (weighted)\nReconstructs p(x) perfectly')
-axes3[1].set_xlabel('x')
-axes3[1].set_ylabel('Density')
-axes3[1].legend()
-axes3[1].grid(True, alpha=0.3)
-axes3[1].set_ylim(0, 1.5)
+---
 
-# Subplot 3: Bad proposal q, weighted histogram
-# To set a sensible y-limit, first compute weighted histogram values
-counts, bins, _ = axes3[2].hist(x_bad, bins=50, weights=w_bad, density=True, 
-                                alpha=0.6, color='red', label='Weighted histogram', 
-                                edgecolor='black', linewidth=0.5)
-axes3[2].plot(x_grid, p_target, 'r-', linewidth=2, label='Target p(x)=1')
-axes3[2].set_title('IS bad q (weighted)\nStill reconstructs p(x) on average')
-axes3[2].set_xlabel('x')
-axes3[2].set_ylabel('Density')
-axes3[2].legend()
-axes3[2].grid(True, alpha=0.3)
+### How to Extend This Experiment
 
-# Set y-limit for bad q based on data, but cap it to keep the view reasonable
-max_density = np.max(counts)
-# If max_density is too large (e.g., due to huge weights near 0), cap at a reasonable multiple of target
-ylim_upper = min(max_density * 1.1, 3.0)  # cap at 3.0 or 10% above max, whichever smaller
-axes3[2].set_ylim(0, ylim_upper)
+- **Try other suboptimal proposals**, e.g., \(q(x) \propto x^3\) or a Beta distribution with mismatched parameters.  
+- **Plot the sample locations** to see that optimal \(q\) samples more densely where \(e^x\) is large.  
+- **Compute the theoretical variance** using the formulas derived in the explanation and compare with empirical results.
 
-# Add a text note if the peak is clipped
-if max_density > 3.0:
-    axes3[2].text(0.05, 0.95, f'* Peak clipped\n  true max ≈ {max_density:.2f}',
-                  transform=axes3[2].transAxes, fontsize=9, verticalalignment='top',
-                  bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-
-plt.tight_layout()
-plt.savefig(os.path.join(results_dir, 'experiment1_weighted_histograms.png'), dpi=150)
-plt.show()
+If you have any questions about the code or the underlying theory, feel free to ask!
