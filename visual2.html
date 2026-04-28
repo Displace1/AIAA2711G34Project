@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>实验1：直接蒙特卡洛 vs 重要性采样 — 方差降低可视化</title>
+    <!-- Plotly 绘图库 (用于动态图表) -->
+    <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
+    <!-- KaTeX 数学公式渲染 (可选) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}] });"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Noto Sans', system-ui, sans-serif;
+            background: linear-gradient(145deg, #f0f4fa 0%, #e6ecf3 100%);
+            margin: 0;
+            padding: 24px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
+            padding: 1.5rem 2rem 2rem 2rem;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 0 0 0.2rem 0;
+        }
+        .sub {
+            color: #2c3e66;
+            border-left: 4px solid #3b82f6;
+            padding-left: 16px;
+            margin-bottom: 24px;
+            font-weight: 400;
+            font-size: 0.95rem;
+        }
+        .math-desc {
+            background: #f8fafc;
+            border-radius: 1.2rem;
+            padding: 0.8rem 1.5rem;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+        .math-desc p {
+            margin: 0.3rem 0;
+        }
+        .plots-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+        .card-header {
+            background: #f8fafd;
+            padding: 0.8rem 1.2rem;
+            border-bottom: 1px solid #e9edf2;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .card-header span:first-child {
+            background: #eef2ff;
+            padding: 0.2rem 0.8rem;
+            border-radius: 40px;
+            color: #1e40af;
+            font-size: 0.75rem;
+        }
+        .plot-area {
+            height: 380px;
+            width: 100%;
+        }
+        .stats-grid {
+            padding: 0.8rem 1.2rem 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+            border-top: 1px solid #eff3f8;
+            font-size: 0.8rem;
+            background: #ffffff;
+        }
+        .stat-item {
+            background: #f1f5f9;
+            border-radius: 1rem;
+            padding: 0.3rem 0.8rem;
+            font-family: monospace;
+        }
+        .control-panel {
+            background: #ffffffdd;
+            backdrop-filter: blur(8px);
+            border-radius: 2rem;
+            padding: 1.2rem 1.8rem;
+            margin-top: 0.5rem;
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+        .slider-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 18px;
+        }
+        .slider-item {
+            flex: 2;
+            min-width: 180px;
+        }
+        .slider-item label {
+            font-weight: 500;
+            color: #1e2f3e;
+            margin-right: 12px;
+            font-size: 0.85rem;
+        }
+        input[type="range"] {
+            width: 200px;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+        .value-display {
+            background: #1e293b;
+            color: #cbd5e6;
+            border-radius: 40px;
+            padding: 4px 12px;
+            font-family: monospace;
+            margin-left: 10px;
+            font-size: 0.8rem;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 12px;
+        }
+        button {
+            background: linear-gradient(100deg, #f0f4f9, #e6ecf3);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #1f3a5f;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #cfdde9;
+        }
+        button.primary {
+            background: linear-gradient(95deg, #2c3e66, #1a2c49);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,20,80,0.2);
+        }
+        button.primary:hover {
+            background: linear-gradient(95deg, #1f3457, #0f1f38);
+            transform: translateY(-1px);
+        }
+        button:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+        .truth-line {
+            font-size: 0.8rem;
+            background: #e6f0fa;
+            border-radius: 20px;
+            padding: 4px 12px;
+            display: inline-block;
+        }
+        hr {
+            margin: 16px 0;
+            border-color: #e2e8f0;
+        }
+        .footer-note {
+            font-size: 0.7rem;
+            text-align: center;
+            color: #5b6e8c;
+            margin-top: 24px;
+        }
+        @media (max-width: 900px) {
+            .plots-grid { grid-template-columns: 1fr; }
+            .container { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🧪 实验1：直接蒙特卡洛 vs 重要性采样 (方差降低对比)</h1>
+    <div class="sub">📐 积分 $I = \int_0^1 e^x dx = e-1 \approx 1.718281828459045$ &nbsp;|&nbsp; 通过采样估计期望 $\mathbb{E}_{U(0,1)}[e^X]$</div>
+
+    <div class="math-desc">
+        <p><strong>⚡ 三种估计量比较：</strong></p>
+        <p>1️⃣ <strong>直接MC</strong> : $X_i \sim U(0,1)$，$\hat{I}_{MC} = \frac{1}{N}\sum e^{X_i}$</p>
+        <p>2️⃣ <strong>最优IS (Optimal)</strong> : 提议分布 $q_{opt}(x)=\frac{e^x}{e-1}$，权重 $w(x)=\frac{e-1}{e^x}$，$\hat{I}_{IS-opt} = \frac{1}{N}\sum e^{X_i} w(X_i)$</p>
+        <p>3️⃣ <strong>次优IS (Linear)</strong> : 提议分布 $q_{bad}(x)=2x$，权重 $w(x)=\frac{1}{2x}$，$\hat{I}_{IS-bad} = \frac{1}{N}\sum e^{X_i} w(X_i)$</p>
+        <p style="margin-top:8px;">🎯 <strong>理论真值</strong> $I = e-1 \approx 1.718281828459045$ &nbsp;&nbsp;|&nbsp; 最优IS方差为零（单样本即精确），次优IS方差可能大于直接MC。</p>
+    </div>
+
+    <div class="plots-grid">
+        <!-- 左图：箱线图展示三种估计量的分布 (当前N, R次重复) -->
+        <div class="card">
+            <div class="card-header">
+                <span>📊 估计量分布对比 (箱线图)</span>
+                <span class="truth-line" id="truthLabel">真值 ≈ 1.71828</span>
+            </div>
+            <div id="boxplot-area" class="plot-area"></div>
+            <div class="stats-grid" id="stats-summary">
+                <span>📌 点击刷新或调整参数自动更新</span>
+            </div>
+        </div>
+
+        <!-- 右图：方差随样本量N变化曲线 (固定重复次数R) -->
+        <div class="card">
+            <div class="card-header">
+                <span>📉 方差 vs 样本量 N (对数坐标)</span>
+                <span>🔁 重复R=<span id="repeatValDisplay">200</span>次</span>
+            </div>
+            <div id="variance-curve" class="plot-area"></div>
+            <div class="stats-grid">
+                <span>✅ 横轴为样本量N，纵轴为估计量的经验方差</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div class="slider-group">
+            <div class="slider-item">
+                <label>🔢 样本量 N (当前实验)</label>
+                <input type="range" id="nSlider" min="20" max="2000" step="20" value="200">
+                <span id="nVal" class="value-display">200</span>
+            </div>
+            <div class="slider-item">
+                <label>🔄 重复次数 R</label>
+                <input type="range" id="rSlider" min="30" max="800" step="10" value="200">
+                <span id="rVal" class="value-display">200</span>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button id="runBtn" class="primary">▶ 运行实验 (更新图表)</button>
+            <button id="resetDefaultBtn">重置默认参数</button>
+            <span style="margin-left: auto; font-size:0.75rem;">✨ 最优IS理论上零方差，但数值上接近机器精度</span>
+        </div>
+        <hr>
+        <div class="btn-group">
+            <span><strong>📌 当前方差比值 (Var(MC)/Var(IS-opt)) : </strong><span id="varRatio">—</span></span>
+            <span><strong>⚡ 次优IS方差与MC方差比: </strong><span id="badRatio">—</span></span>
+        </div>
+    </div>
+    <div class="footer-note">
+        💡 说明：最优重要性采样使用$q_{opt}(x)=e^x/(e-1)$，此时权重为常数，估计量方差为零（理论上单样本即精确）。次优提议分布$q_{bad}(x)=2x$在x=0附近权重极大，导致方差膨胀。 滑动参数后点击“运行实验”或修改参数自动触发更新。
+    </div>
+</div>
+
+<script>
+    // ---------- 数学函数与分布采样器 ----------
+    const TRUE_VALUE = Math.E - 1;   // 1.718281828459045
+
+    // 1. 直接MC：从Uniform(0,1)采样
+    function uniformSample() {
+        return Math.random();
+    }
+
+    // 2. 最优提议分布 q_opt(x) = e^x/(e-1)  (x∈[0,1]) ，CDF: F(x) = (e^x -1)/(e-1)
+    // 逆变换采样: 给定 u ~ U(0,1) => x = ln(1 + u*(e-1))
+    function optimalProposalSample() {
+        const u = Math.random();
+        return Math.log(1 + u * (Math.E - 1));
+    }
+    // 最优权重 w_opt(x) = p(x)/q_opt(x) = 1 / (e^x/(e-1))? 注意 p(x)=1, 所以 w_opt = 1 / q_opt(x) = (e-1)/e^x
+    function optimalWeight(x) {
+        return (Math.E - 1) / Math.exp(x);
+    }
+
+    // 3. 次优提议分布 q_bad(x) = 2x, x∈[0,1], CDF: F(x)= x^2, 逆变换 x = sqrt(u)
+    function badProposalSample() {
+        const u = Math.random();
+        return Math.sqrt(u);
+    }
+    // 权重 w_bad(x) = p(x)/q_bad(x) = 1/(2x)
+    function badWeight(x) {
+        if (x < 1e-12) return 1e12; // 防御接近0, 实际影响不大
+        return 1 / (2 * x);
+    }
+
+    // 单个估计量的重复实验 (给定N, R, 采样方法类型)
+    // type: 'mc', 'is_opt', 'is_bad'
+    function runEstimates(N, R, type) {
+        const estimates = new Array(R);
+        for (let rep = 0; rep < R; rep++) {
+            let sum = 0;
+            if (type === 'mc') {
+                for (let i = 0; i < N; i++) {
+                    const x = uniformSample();
+                    sum += Math.exp(x);
+                }
+                estimates[rep] = sum / N;
+            } 
+            else if (type === 'is_opt') {
+                for (let i = 0; i < N; i++) {
+                    const x = optimalProposalSample();
+                    const f = Math.exp(x);
+                    const w = optimalWeight(x);
+                    sum += f * w;
+                }
+                estimates[rep] = sum / N;
+            }
+            else if (type === 'is_bad') {
+                for (let i = 0; i < N; i++) {
+                    const x = badProposalSample();
+                    const f = Math.exp(x);
+                    const w = badWeight(x);
+                    sum += f * w;
+                }
+                estimates[rep] = sum / N;
+            }
+        }
+        // 计算均值和方差
+        const mean = estimates.reduce((a,b) => a+b, 0) / R;
+        let varSum = 0;
+        for(let v of estimates) varSum += (v - mean) ** 2;
+        const variance = varSum / (R-1);
+        return { estimates, mean, variance, std: Math.sqrt(variance) };
+    }
+
+    // 针对一组N值序列计算方差变化 (用于右侧曲线)
+    function computeVarianceCurve(N_list, R, type) {
+        const variances = [];
+        const means = [];
+        for (let n of N_list) {
+            const res = runEstimates(n, R, type);
+            variances.push(res.variance);
+            means.push(res.mean);
+        }
+        return { variances, means };
+    }
+
+    // ---------- 全局变量与DOM元素 ----------
+    let currentN = 200;
+    let currentR = 200;
+
+    // 存储当前三种估计量的结果（用于箱线图）
+    let currentMCEstimates = [];
+    let currentOptEstimates = [];
+    let currentBadEstimates = [];
+
+    // 绘图区域
+    const boxplotDiv = document.getElementById('boxplot-area');
+    const varianceDiv = document.getElementById('variance-curve');
+
+    // 辅助函数: 更新右侧方差曲线 (固定R, 对多个N点扫描)
+    function updateVarianceCurve() {
+        // 定义扫描的N值 (对数间距让曲线平滑)
+        const minN = 20, maxN = Math.min(2000, Math.max(200, currentN*1.5)); 
+        const nPoints = 20;
+        const N_scan = [];
+        for(let i=0; i<=nPoints; i++) {
+            const t = i / nPoints;  // 0..1
+            let nVal = minN * Math.pow(maxN/minN, t);
+            nVal = Math.floor(nVal);
+            if(nVal < 10) nVal = 10;
+            if(!N_scan.includes(nVal)) N_scan.push(nVal);
+        }
+        // 保证包含当前选中的N
+        if(!N_scan.includes(currentN)) N_scan.push(currentN);
+        N_scan.sort((a,b)=>a-b);
+        
+        // 计算三个方法的方差序列
+        const mcRes = computeVarianceCurve(N_scan, currentR, 'mc');
+        const optRes = computeVarianceCurve(N_scan, currentR, 'is_opt');
+        const badRes = computeVarianceCurve(N_scan, currentR, 'is_bad');
+        
+        const traceMC = {
+            x: N_scan,
+            y: mcRes.variances,
+            mode: 'lines+markers',
+            name: '直接MC 方差',
+            line: { color: '#3b82f6', width: 2.5 },
+            marker: { size: 5 },
+            hovertemplate: 'N=%{x}<br>Var=%{y:.2e}<extra></extra>'
+        };
+        const traceOpt = {
+            x: N_scan,
+            y: optRes.variances,
+            mode: 'lines+markers',
+            name: '最优IS 方差 (近零)',
+            line: { color: '#10b981', width: 2.5, dash: 'dot' },
+            marker: { size: 5 },
+            hovertemplate: 'N=%{x}<br>Var=%{y:.2e}<extra></extra>'
+        };
+        const traceBad = {
+            x: N_scan,
+            y: badRes.variances,
+            mode: 'lines+markers',
+            name: '次优IS 方差',
+            line: { color: '#f97316', width: 2.5 },
+            marker: { size: 5 },
+            hovertemplate: 'N=%{x}<br>Var=%{y:.2e}<extra></extra>'
+        };
+        
+        const layout = {
+            title: { text: `方差随样本量 N 变化 (R=${currentR}次重复，对数坐标)`, font: {size: 13} },
+            xaxis: { title: '样本量 N', type: 'log', tickformat: '.0f' },
+            yaxis: { title: '经验方差', type: 'log', tickformat: '.1e' },
+            hovermode: 'closest',
+            margin: { t: 50, l: 60, r: 30, b: 40 },
+            legend: { orientation: 'h', y: -0.2 }
+        };
+        Plotly.react(varianceDiv, [traceMC, traceOpt, traceBad], layout, {displayModeBar: false, responsive: true});
+        
+        // 额外计算当前N下的方差比值
+        const idxCur = N_scan.indexOf(currentN);
+        if(idxCur !== -1) {
+            const varMC = mcRes.variances[idxCur];
+            const varOpt = optRes.variances[idxCur];
+            const varBad = badRes.variances[idxCur];
+            const ratio = varMC / (varOpt + 1e-16);
+            const ratioBad = varBad / (varMC + 1e-16);
+            document.getElementById('varRatio').innerHTML = ratio.toFixed(2) + " x";
+            document.getElementById('badRatio').innerHTML = ratioBad.toFixed(2) + " x";
+        } else {
+            document.getElementById('varRatio').innerHTML = '—';
+            document.getElementById('badRatio').innerHTML = '—';
+        }
+    }
+    
+    // 更新箱线图 (基于当前N,R)
+    function updateBoxplot() {
+        // 运行三种方法的重复实验
+        const mc = runEstimates(currentN, currentR, 'mc');
+        const opt = runEstimates(currentN, currentR, 'is_opt');
+        const bad = runEstimates(currentN, currentR, 'is_bad');
+        currentMCEstimates = mc.estimates;
+        currentOptEstimates = opt.estimates;
+        currentBadEstimates = bad.estimates;
+        
+        // 构建箱线图数据 (Plotly.box)
+        const traceMC = {
+            y: mc.estimates,
+            name: '直接MC',
+            type: 'box',
+            boxmean: 'sd',
+            marker: { color: '#3b82f6', outliercolor: '#3b82f6' },
+            line: { width: 1.5 },
+            fillcolor: 'rgba(59,130,246,0.2)'
+        };
+        const traceOpt = {
+            y: opt.estimates,
+            name: '最优IS (Optimal)',
+            type: 'box',
+            boxmean: 'sd',
+            marker: { color: '#10b981' },
+            fillcolor: 'rgba(16,185,129,0.2)'
+        };
+        const traceBad = {
+            y: bad.estimates,
+            name: '次优IS (Linear)',
+            type: 'box',
+            boxmean: 'sd',
+            marker: { color: '#f97316' },
+            fillcolor: 'rgba(249,115,22,0.2)'
+        };
+        
+        // 添加理论真值参考线 (用形状)
+        const shapes = [{
+            type: 'line',
+            x0: -0.5, x1: 2.5, y0: TRUE_VALUE, y1: TRUE_VALUE,
+            line: { color: 'red', width: 2, dash: 'dash' },
+            name: '真值'
+        }];
+        const layout = {
+            title: { text: `估计量分布对比 (N=${currentN}, R=${currentR}次重复)`, font: {size: 13} },
+            yaxis: { title: '估计值 Î', range: [TRUE_VALUE - 0.2, TRUE_VALUE + 0.6], zeroline: false },
+            xaxis: { title: '估计方法' },
+            shapes: shapes,
+            annotations: [{
+                x: 2.2, y: TRUE_VALUE + 0.03, xref: 'x', yref: 'y',
+                text: `真值 = ${TRUE_VALUE.toFixed(6)}`,
+                showarrow: false, font: {color: 'red', size: 10}
+            }],
+            margin: { t: 50, l: 50, r: 20, b: 40 },
+            legend: { orientation: 'h', y: 1.05 }
+        };
+        Plotly.react(boxplotDiv, [traceMC, traceOpt, traceBad], layout, {displayModeBar: false, responsive: true});
+        
+        // 更新统计摘要
+        const meanMC = mc.mean.toFixed(6);
+        const varMC = mc.variance.toExponential(4);
+        const meanOpt = opt.mean.toFixed(6);
+        const varOpt = opt.variance.toExponential(4);
+        const meanBad = bad.mean.toFixed(6);
+        const varBad = bad.variance.toExponential(4);
+        
+        document.getElementById('stats-summary').innerHTML = `
+            <div class="stat-item">🎲 MC: 均值=${meanMC} &nbsp; 方差=${varMC}</div>
+            <div class="stat-item">✨ 最优IS: 均值=${meanOpt} &nbsp; 方差=${varOpt}</div>
+            <div class="stat-item">⚠️ 次优IS: 均值=${meanBad} &nbsp; 方差=${varBad}</div>
+        `;
+    }
+    
+    // 完整的刷新函数 (同时更新曲线和箱线图)
+    function refreshAll() {
+        updateBoxplot();
+        updateVarianceCurve();
+    }
+    
+    // 重置为推荐参数
+    function resetDefaults() {
+        document.getElementById('nSlider').value = '200';
+        document.getElementById('rSlider').value = '200';
+        currentN = 200;
+        currentR = 200;
+        document.getElementById('nVal').innerText = '200';
+        document.getElementById('rVal').innerText = '200';
+        document.getElementById('repeatValDisplay').innerText = '200';
+        refreshAll();
+    }
+    
+    // 事件绑定与初始化
+    function bindEvents() {
+        const nSlider = document.getElementById('nSlider');
+        const rSlider = document.getElementById('rSlider');
+        const nVal = document.getElementById('nVal');
+        const rVal = document.getElementById('rVal');
+        const repeatSpan = document.getElementById('repeatValDisplay');
+        const runBtn = document.getElementById('runBtn');
+        const resetBtn = document.getElementById('resetDefaultBtn');
+        
+        const updateFromSliders = () => {
+            currentN = parseInt(nSlider.value);
+            currentR = parseInt(rSlider.value);
+            nVal.innerText = currentN;
+            rVal.innerText = currentR;
+            repeatSpan.innerText = currentR;
+            refreshAll();
+        };
+        
+        nSlider.addEventListener('input', () => {
+            currentN = parseInt(nSlider.value);
+            nVal.innerText = currentN;
+        });
+        rSlider.addEventListener('input', () => {
+            currentR = parseInt(rSlider.value);
+            rVal.innerText = currentR;
+            repeatSpan.innerText = currentR;
+        });
+        runBtn.addEventListener('click', () => {
+            currentN = parseInt(nSlider.value);
+            currentR = parseInt(rSlider.value);
+            nVal.innerText = currentN;
+            rVal.innerText = currentR;
+            repeatSpan.innerText = currentR;
+            refreshAll();
+        });
+        resetBtn.addEventListener('click', resetDefaults);
+        // 也可以让滑块滑动时实时更新，但鉴于计算量较大（重复实验耗时），采用手动点击运行，体验更好
+    }
+    
+    // 初始化界面和占位图
+    function initPlaceholders() {
+        // 先给空图
+        const emptyBox = {
+            data: [{ y: [TRUE_VALUE], type: 'box', name: '等待运行' }],
+            layout: { title: '点击运行实验' }
+        };
+        Plotly.newPlot(boxplotDiv, emptyBox.data, emptyBox.layout);
+        Plotly.newPlot(varianceDiv, [{ x: [1], y: [0], mode: 'lines', name: '等待数据' }], { title: '点击运行更新曲线' });
+    }
+    
+    // 页面加载后执行
+    window.onload = () => {
+        initPlaceholders();
+        bindEvents();
+        // 初始运行一次
+        setTimeout(() => {
+            currentN = 200;
+            currentR = 200;
+            refreshAll();
+        }, 100);
+    };
+</script>
+</body>
+</html>
