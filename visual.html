@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>三种采样方法可视化：直接采样 / 拒绝采样 / 重要性采样</title>
+    <!-- Plotly 绘图库，用于动态图表 -->
+    <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none; /* 避免拖动滑块时误选文字 */
+        }
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Noto Sans', system-ui, sans-serif;
+            background: linear-gradient(145deg, #f5f7fc 0%, #eef2f5 100%);
+            margin: 0;
+            min-height: 100vh;
+            padding: 24px 20px;
+        }
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.65);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
+            padding: 1.5rem 2rem 2rem 2rem;
+            transition: all 0.2s;
+        }
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #1E3C72, #2A5298);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 0 0 0.25rem 0;
+            letter-spacing: -0.3px;
+        }
+        .sub {
+            color: #4a627a;
+            border-left: 4px solid #3b82f6;
+            padding-left: 14px;
+            margin-bottom: 28px;
+            font-weight: 400;
+        }
+        /* 三图网格 */
+        .plots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+            transition: transform 0.1s ease;
+            backdrop-filter: blur(0px);
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+        .card-header {
+            background: #f8fafd;
+            padding: 0.9rem 1.2rem;
+            border-bottom: 1px solid #e9edf2;
+            font-weight: 600;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+        }
+        .card-header span:first-child {
+            background: #eef2ff;
+            padding: 0.2rem 0.8rem;
+            border-radius: 40px;
+            color: #1e40af;
+            font-size: 0.8rem;
+        }
+        .info-badge {
+            font-size: 0.75rem;
+            background: #e9ecef;
+            border-radius: 20px;
+            padding: 0.2rem 0.65rem;
+            font-family: monospace;
+        }
+        .plot-area {
+            height: 320px;
+            width: 100%;
+        }
+        .stats-row {
+            padding: 0.7rem 1.2rem 1rem 1.2rem;
+            background: #ffffff;
+            border-top: 1px solid #eff3f8;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        /* 控制台 */
+        .control-panel {
+            background: #ffffffdd;
+            backdrop-filter: blur(8px);
+            border-radius: 2rem;
+            padding: 1.3rem 1.8rem;
+            margin-top: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+        .slider-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 22px;
+        }
+        .slider-item {
+            flex: 2;
+            min-width: 160px;
+        }
+        .slider-item label {
+            font-weight: 500;
+            color: #1e2f3e;
+            margin-right: 12px;
+            font-size: 0.85rem;
+        }
+        input[type="range"] {
+            width: 180px;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        button {
+            background: linear-gradient(100deg, #f0f4f9, #e6ecf3);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #1f3a5f;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            border: 1px solid #cfdde9;
+        }
+        button.primary {
+            background: linear-gradient(95deg, #2c3e66, #1a2c49);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,20,80,0.2);
+        }
+        button.primary:hover {
+            background: linear-gradient(95deg, #1f3457, #0f1f38);
+            transform: translateY(-1px);
+        }
+        button:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+        .value-display {
+            background: #1e293b;
+            color: #cbd5e6;
+            border-radius: 40px;
+            padding: 4px 12px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        hr {
+            margin: 16px 0;
+            border-color: #e2e8f0;
+        }
+        .footer-note {
+            font-size: 0.7rem;
+            text-align: center;
+            color: #5b6e8c;
+            margin-top: 20px;
+        }
+        @media (max-width: 780px) {
+            .container { padding: 1rem; }
+            .btn-group button { padding: 6px 14px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎲 采样方法实验室 · 同步可视化</h1>
+    <div class="sub">📊 直接采样 | 拒绝采样 (Accept-Reject) | 重要性采样 —— 随样本数增加动态演化</div>
+
+    <div class="plots-grid">
+        <!-- 直接采样卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <span>📈 直接采样 (Direct)</span>
+                <span class="info-badge">标准正态 N(0,1)</span>
+            </div>
+            <div id="plot-direct" class="plot-area"></div>
+            <div class="stats-row">
+                <span>🧪 样本量: <strong id="direct-count">0</strong></span>
+                <span>📐 均值: <span id="direct-mean">—</span></span>
+                <span>📏 方差: <span id="direct-var">—</span></span>
+            </div>
+        </div>
+
+        <!-- 拒绝采样卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <span>🎯 拒绝采样 (Rejection)</span>
+                <span class="info-badge">目标: 双峰混合高斯</span>
+            </div>
+            <div id="plot-rejection" class="plot-area"></div>
+            <div class="stats-row">
+                <span>✅ 接受样本: <strong id="rej-count">0</strong></span>
+                <span>📊 接受率: <span id="accept-rate">—</span></span>
+                <span>⚙️ M 常数: <span id="M-value">—</span></span>
+            </div>
+        </div>
+
+        <!-- 重要性采样卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <span>⚖️ 重要性采样 (Importance)</span>
+                <span class="info-badge">估计 E[X²]</span>
+            </div>
+            <div id="plot-importance" class="plot-area"></div>
+            <div class="stats-row">
+                <span>📦 样本量: <strong id="imp-count">0</strong></span>
+                <span>🎯 估计值 Ê[X²]: <strong id="imp-estimate">0.000</strong></span>
+                <span>📉 有效样本比: <span id="ess-ratio">—</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div class="slider-group">
+            <div class="slider-item">
+                <label>🔢 目标总样本数 (每类) </label>
+                <input type="range" id="totalSamplesSlider" min="50" max="4000" step="50" value="1200">
+                <span id="totalVal" class="value-display" style="margin-left: 10px;">1200</span>
+            </div>
+            <div class="slider-item">
+                <label>⏩ 步进步长 (每次增加)</label>
+                <input type="range" id="stepSizeSlider" min="10" max="200" step="10" value="50">
+                <span id="stepVal" class="value-display" style="margin-left: 10px;">50</span>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button id="startBtn" class="primary">▶ 开始采样 (逐步推进)</button>
+            <button id="pauseBtn">⏸️ 暂停</button>
+            <button id="resetBtn">🔄 重置所有采样</button>
+            <button id="stepBtn">➕ 单步增加</button>
+        </div>
+        <div class="btn-group">
+            <span style="font-size: 0.8rem;">⚡ 当前进度: <span id="currentProgress">0</span> / <span id="maxProgressSpan">1200</span> 样本</span>
+            <span style="font-size: 0.8rem; margin-left: auto;">🌡️ 动画状态: <span id="animState">停止</span></span>
+        </div>
+    </div>
+    <div class="footer-note">
+        💡 拒绝采样目标分布: 0.3·N(-2,0.8²) + 0.7·N(2,0.8²) &nbsp;&nbsp;|&nbsp; 提议分布: Uniform(-4,6) &nbsp;|&nbsp; 重要性采样用同提议分布估计 E[X²]
+    </div>
+</div>
+
+<script>
+    // ----------------------------- 分布定义 (JavaScript) -----------------------------
+    // 目标分布 p(x) : 双峰混合高斯
+    function normPDF(x, mu, sigma) {
+        const s = sigma;
+        const z = (x - mu) / s;
+        return (1 / (Math.sqrt(2 * Math.PI) * s)) * Math.exp(-0.5 * z * z);
+    }
+    function targetPdf(x) {
+        return 0.3 * normPDF(x, -2, 0.8) + 0.7 * normPDF(x, 2, 0.8);
+    }
+    // 提议分布 q(x) : Uniform(-4, 6)
+    const Q_MIN = -4.0, Q_MAX = 6.0;
+    function proposalPdf(x) {
+        if (x >= Q_MIN && x <= Q_MAX) return 1.0 / (Q_MAX - Q_MIN);
+        return 0;
+    }
+    function proposalRvs() {
+        return Q_MIN + Math.random() * (Q_MAX - Q_MIN);
+    }
+    // 计算常数 M (确保 M*q(x) >= p(x) )
+    function computeM() {
+        let maxRatio = 0;
+        for (let x = Q_MIN; x <= Q_MAX; x += 0.02) {
+            const ratio = targetPdf(x) / proposalPdf(x);
+            if (ratio > maxRatio) maxRatio = ratio;
+        }
+        return maxRatio * 1.05;  // 略微裕度
+    }
+    const M_CONST = computeM();   // 典型约 2.7 ~ 3.0 之间
+    
+    // 直接采样: 标准正态
+    function directSampleOne() {
+        // Box-Muller 标准正态
+        let u = 0, v = 0;
+        while(u === 0) u = Math.random();
+        while(v === 0) v = Math.random();
+        const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        return z;
+    }
+    
+    // 拒绝采样: 生成一个接受样本
+    function rejectionSampleOne() {
+        while(true) {
+            const x_cand = proposalRvs();
+            const u = Math.random() * M_CONST * proposalPdf(x_cand);
+            if (u <= targetPdf(x_cand)) {
+                return x_cand;
+            }
+        }
+    }
+    
+    // 重要性采样: 生成一个样本及其权重 (不做归一化，用于后续估计)
+    function importanceSampleOne() {
+        const x = proposalRvs();
+        const w = targetPdf(x) / proposalPdf(x);
+        return {x, w};
+    }
+    
+    // ----------------------------- 全局状态管理 -----------------------------
+    let directSamples = [];      // 直接采样样本
+    let rejSamples = [];         // 拒绝采样接受样本
+    let impSamples = [];         // 重要性采样样本 (x)
+    let impWeights = [];         // 重要性权重
+    
+    let totalTarget = 1200;      // 目标样本总数
+    let stepSize = 50;           // 每次步进增量
+    
+    let animationInterval = null;
+    let isAnimating = false;
+    
+    // 绘图相关引用
+    let plotDirectDiv, plotRejDiv, plotImpDiv;
+    
+    // 理论密度曲线数据 (用于直接采样对比和拒绝采样对比)
+    const xGrid = [];
+    for (let x = -5; x <= 6.01; x += 0.05) xGrid.push(x);
+    const normTheoretical = xGrid.map(x => normPDF(x, 0, 1));
+    const targetTheoretical = xGrid.map(x => targetPdf(x));
+    
+    // 辅助函数: 更新UI中的计数，均值等
+    function updateStats() {
+        // 直接采样统计
+        const dCount = directSamples.length;
+        document.getElementById('direct-count').innerText = dCount;
+        if (dCount > 0) {
+            const meanDir = directSamples.reduce((a,b)=>a+b,0)/dCount;
+            const varDir = directSamples.reduce((a,b)=>a + (b-meanDir)**2,0)/dCount;
+            document.getElementById('direct-mean').innerText = meanDir.toFixed(4);
+            document.getElementById('direct-var').innerText = varDir.toFixed(4);
+        } else {
+            document.getElementById('direct-mean').innerText = '—';
+            document.getElementById('direct-var').innerText = '—';
+        }
+        // 拒绝采样统计
+        const rCount = rejSamples.length;
+        document.getElementById('rej-count').innerText = rCount;
+        const totalAttempts = document.getElementById('accept-rate').getAttribute('data-attempts') ? 
+            parseInt(document.getElementById('accept-rate').getAttribute('data-attempts')) : rCount;
+        // 接收率粗略 (需要维护attempts计数器，简化: 我们维护尝试次数)
+        // 我们在生成时维护全局 rejAttempts，下面单独实现
+        // 单独用变量记录尝试次数: 在生成函数中会统计 后面加上
+        // 为避免复杂，接受率我们用接受样本/总尝试次数？会在每次增加时记录，放在全局
+        if(window.rejTotalAttempts && window.rejTotalAttempts > 0){
+            const rate = (rCount / window.rejTotalAttempts * 100).toFixed(1);
+            document.getElementById('accept-rate').innerHTML = `${rate}% (${rCount}/${window.rejTotalAttempts})`;
+        } else {
+            document.getElementById('accept-rate').innerHTML = '—';
+        }
+        document.getElementById('M-value').innerText = M_CONST.toFixed(3);
+        
+        // 重要性采样统计
+        const iCount = impSamples.length;
+        document.getElementById('imp-count').innerText = iCount;
+        if(iCount > 0){
+            // 计算加权估计 E[X^2]
+            let sumW = 0, sumWf = 0;
+            for(let i=0;i<iCount;i++){
+                const w = impWeights[i];
+                const xval = impSamples[i];
+                const f = xval * xval;
+                sumW += w;
+                sumWf += w * f;
+            }
+            const estimate = sumWf / sumW;
+            document.getElementById('imp-estimate').innerHTML = estimate.toFixed(5);
+            // 有效样本比 ESS = (sum w)^2 / sum(w^2)
+            let sumW2 = 0;
+            for(let i=0;i<iCount;i++) sumW2 += impWeights[i] * impWeights[i];
+            const ess = (sumW * sumW) / sumW2;
+            const essRatio = (ess / iCount * 100).toFixed(1);
+            document.getElementById('ess-ratio').innerHTML = `${essRatio}%`;
+        } else {
+            document.getElementById('imp-estimate').innerHTML = '0.000';
+            document.getElementById('ess-ratio').innerHTML = '—';
+        }
+        // 进度显示
+        const maxTotal = totalTarget;
+        const curMax = Math.max(directSamples.length, rejSamples.length, impSamples.length);
+        document.getElementById('currentProgress').innerText = `${curMax}`;
+        document.getElementById('maxProgressSpan').innerText = maxTotal;
+    }
+    
+    // 重置尝试计数器
+    let rejAttemptCounter = 0;
+    
+    // 增加一系列样本 (同步三种方法分别增加 step 个样本)
+    function addSamples(step) {
+        // 1. 直接采样增加 step 个
+        for(let i=0; i<step && directSamples.length < totalTarget; i++) {
+            directSamples.push(directSampleOne());
+        }
+        // 2. 拒绝采样增加 step 个接受样本 (循环直到新增 step 个接受)
+        let addedRej = 0;
+        while(addedRej < step && rejSamples.length < totalTarget) {
+            const cand = proposalRvs();
+            rejAttemptCounter++;
+            const u = Math.random() * M_CONST * proposalPdf(cand);
+            if(u <= targetPdf(cand)) {
+                rejSamples.push(cand);
+                addedRej++;
+            }
+        }
+        // 同步尝试次数到全局用于接受率显示
+        window.rejTotalAttempts = rejAttemptCounter;
+        
+        // 3. 重要性采样增加 step 个 (x, 权重)
+        for(let i=0; i<step && impSamples.length < totalTarget; i++) {
+            const {x, w} = importanceSampleOne();
+            impSamples.push(x);
+            impWeights.push(w);
+        }
+        
+        // 更新所有图表
+        refreshPlots();
+        updateStats();
+    }
+    
+    // 完全重置所有数据
+    function resetAll() {
+        directSamples = [];
+        rejSamples = [];
+        impSamples = [];
+        impWeights = [];
+        rejAttemptCounter = 0;
+        window.rejTotalAttempts = 0;
+        if(animationInterval) {
+            clearInterval(animationInterval);
+            animationInterval = null;
+            isAnimating = false;
+            document.getElementById('animState').innerText = '停止';
+        }
+        refreshPlots();
+        updateStats();
+    }
+    
+    // 逐步增加 stepSize
+    function stepForward() {
+        if (directSamples.length >= totalTarget && rejSamples.length >= totalTarget && impSamples.length >= totalTarget) {
+            if(animationInterval) clearInterval(animationInterval);
+            isAnimating = false;
+            document.getElementById('animState').innerText = '已完成';
+            return;
+        }
+        // 动态步进，但不超过目标总数剩余最小缺口
+        let remaining = totalTarget - Math.max(directSamples.length, rejSamples.length, impSamples.length);
+        let actualStep = Math.min(stepSize, Math.max(1, remaining));
+        if(actualStep > 0) addSamples(actualStep);
+        else {
+            // 已达上限
+            if(animationInterval) clearInterval(animationInterval);
+            isAnimating = false;
+            document.getElementById('animState').innerText = '完成';
+        }
+    }
+    
+    // 绘图刷新 (使用Plotly重绘直方图和密度曲线)
+    function refreshPlots() {
+        // 1. 直接采样直方图 + 理论正态曲线
+        const dCount = directSamples.length;
+        let histDirect = [];
+        if(dCount > 0) {
+            const hist = computeHistogram(directSamples, -4, 4, 40);
+            histDirect = hist;
+        } else {
+            histDirect = {x: [], y: []};
+        }
+        
+        // 直方图trace (概率密度)
+        const directHistTrace = {
+            x: histDirect.x,
+            y: histDirect.y,
+            type: 'bar',
+            name: '采样直方图',
+            marker: {color: '#3b82f6', opacity: 0.65},
+            histnorm: 'probability density'
+        };
+        // 由于computeHistogram返回已经归一化高度, 我们直接用bar；但plotly支持直接histogram? 但为了统一控制, 自己做归一化bin高度
+        // 改进：使用plotly的histogram trace更简单，但需要每次重建数据。为了密度吻合我们采用自定义bin+bar方式确保与理论曲线同尺度
+        // 重新构造直方图数据更可靠: 已自定义
+        const theoryTraceDir = {
+            x: xGrid,
+            y: normTheoretical,
+            type: 'scatter',
+            mode: 'lines',
+            name: '理论 N(0,1)',
+            line: {color: '#e11d48', width: 2.5, dash: 'dot'}
+        };
+        const plotDataDir = dCount > 0 ? [directHistTrace, theoryTraceDir] : [theoryTraceDir];
+        Plotly.react(plotDirectDiv, plotDataDir, {
+            title: {text: `直接采样 (n=${dCount})`, font: {size: 13}},
+            xaxis: {title: 'x', range: [-4.2, 4.2]},
+            yaxis: {title: '密度'},
+            margin: {t: 40, l: 40, r: 20, b: 30},
+            bargap: 0.05,
+            showlegend: true,
+            legend: {orientation: 'h', y: -0.2}
+        }, {displayModeBar: false, responsive: true});
+        
+        // 2. 拒绝采样直方图 + 目标分布理论曲线
+        const rCount = rejSamples.length;
+        let histRej = {x:[], y:[]};
+        if(rCount > 0) {
+            histRej = computeHistogram(rejSamples, -4, 6, 45);
+        }
+        const rejHistTrace = {
+            x: histRej.x,
+            y: histRej.y,
+            type: 'bar',
+            name: '拒绝采样样本',
+            marker: {color: '#f97316', opacity: 0.7},
+        };
+        const targetTrace = {
+            x: xGrid,
+            y: targetTheoretical,
+            type: 'scatter',
+            mode: 'lines',
+            name: '目标密度 p(x)',
+            line: {color: '#2c3e66', width: 2.8}
+        };
+        const plotDataRej = rCount > 0 ? [rejHistTrace, targetTrace] : [targetTrace];
+        Plotly.react(plotRejDiv, plotDataRej, {
+            title: {text: `拒绝采样 · 接受样本 (n=${rCount}) | M = ${M_CONST.toFixed(2)}`, font: {size: 13}},
+            xaxis: {title: 'x', range: [-4.2, 6.2]},
+            yaxis: {title: '密度'},
+            margin: {t: 42, l: 40, r: 20, b: 30},
+            bargap: 0.05,
+            showlegend: true,
+            legend: {orientation: 'h', y: -0.2}
+        }, {displayModeBar: false});
+        
+        // 3. 重要性采样: 展示 样本 - 权重 散点图 + 水平线平均权重
+        const iCount = impSamples.length;
+        let impX = impSamples.slice();
+        let impW = impWeights.slice();
+        let scatterTrace = {
+            x: impX,
+            y: impW,
+            mode: 'markers',
+            type: 'scatter',
+            marker: {
+                size: 5,
+                color: impW,
+                colorscale: 'Viridis',
+                showscale: false,
+                opacity: 0.7
+            },
+            name: '样本权重'
+        };
+        let avgWeight = iCount > 0 ? impW.reduce((a,b)=>a+b,0)/iCount : 0;
+        let avgLine = {
+            x: iCount > 0 ? [Math.min(...impX)-0.5, Math.max(...impX)+0.5] : [-3,3],
+            y: [avgWeight, avgWeight],
+            mode: 'lines',
+            type: 'scatter',
+            name: `平均权重 = ${avgWeight.toFixed(4)}`,
+            line: {color: '#dc2626', width: 2, dash: 'dash'}
+        };
+        let estimateText = '';
+        if(iCount > 0){
+            let sumW = 0, sumWf = 0;
+            for(let i=0;i<iCount;i++) { sumW += impW[i]; sumWf += impW[i] * (impX[i]*impX[i]); }
+            const est = sumWf/sumW;
+            estimateText = `<b>Ê[X²] = ${est.toFixed(5)}</b>`;
+        }
+        const plotDataImp = iCount > 0 ? [scatterTrace, avgLine] : [avgLine];
+        Plotly.react(plotImpDiv, plotDataImp, {
+            title: {text: `重要性采样 · 权重分布 | ${estimateText}`, font: {size: 13}},
+            xaxis: {title: '样本 x (来自提议分布)', range: [-4.3, 6.3]},
+            yaxis: {title: '重要性权重 w(x) = p/q'},
+            margin: {t: 48, l: 45, r: 20, b: 30},
+            showlegend: true,
+            legend: {orientation: 'h', y: -0.2}
+        }, {displayModeBar: false});
+    }
+    
+    // 辅助: 计算直方图 (概率密度)
+    function computeHistogram(data, rangeMin, rangeMax, nbins) {
+        if(data.length === 0) return {x:[], y:[]};
+        const binEdges = [];
+        const binWidth = (rangeMax - rangeMin) / nbins;
+        for(let i=0;i<=nbins;i++) binEdges.push(rangeMin + i*binWidth);
+        const counts = new Array(nbins).fill(0);
+        for(let val of data) {
+            if(val < rangeMin || val > rangeMax) continue;
+            let idx = Math.floor((val - rangeMin)/binWidth);
+            if(idx === nbins) idx = nbins-1;
+            if(idx>=0 && idx<nbins) counts[idx]++;
+        }
+        const density = counts.map(c => c / (data.length * binWidth));
+        const binCenters = binEdges.slice(0, -1).map((edge,i) => edge + binWidth/2);
+        return {x: binCenters, y: density};
+    }
+    
+    // 启动自动逐步动画
+    function startAnimation() {
+        if(isAnimating) return;
+        if(directSamples.length >= totalTarget && rejSamples.length >= totalTarget && impSamples.length >= totalTarget) {
+            document.getElementById('animState').innerText = '已完成';
+            return;
+        }
+        isAnimating = true;
+        document.getElementById('animState').innerText = '采集中 ▶';
+        if(animationInterval) clearInterval(animationInterval);
+        animationInterval = setInterval(() => {
+            // 检查是否已全部达到目标
+            if(directSamples.length >= totalTarget && rejSamples.length >= totalTarget && impSamples.length >= totalTarget) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+                isAnimating = false;
+                document.getElementById('animState').innerText = '完成';
+                refreshPlots();
+                updateStats();
+                return;
+            }
+            stepForward();
+            // 边界刷新已经包含在stepForward里调用 refreshPlots & updateStats
+        }, 70);
+    }
+    
+    function stopAnimation() {
+        if(animationInterval) {
+            clearInterval(animationInterval);
+            animationInterval = null;
+        }
+        isAnimating = false;
+        document.getElementById('animState').innerText = '已暂停';
+    }
+    
+    // 初始化界面和事件绑定
+    window.onload = () => {
+        plotDirectDiv = document.getElementById('plot-direct');
+        plotRejDiv = document.getElementById('plot-rejection');
+        plotImpDiv = document.getElementById('plot-importance');
+        
+        // 初始空图表显示理论曲线
+        const emptyData = [{x: xGrid, y: normTheoretical, type: 'scatter', mode: 'lines', name: '理论密度'}];
+        Plotly.newPlot(plotDirectDiv, emptyData, {title: '直接采样 (等待采样)', margin: {t: 40}});
+        Plotly.newPlot(plotRejDiv, [{x: xGrid, y: targetTheoretical, type: 'scatter', mode: 'lines', name: '目标分布'}], {title: '拒绝采样 (等待采样)'});
+        Plotly.newPlot(plotImpDiv, [{x:[-2,2], y:[0.5,0.5], mode:'lines', line:{dash:'dot'}}], {title: '重要性采样 (待采样)'});
+        
+        // 绑定控件
+        const totalSlider = document.getElementById('totalSamplesSlider');
+        const stepSlider = document.getElementById('stepSizeSlider');
+        const totalVal = document.getElementById('totalVal');
+        const stepVal = document.getElementById('stepVal');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const stepBtn = document.getElementById('stepBtn');
+        
+        totalSlider.addEventListener('input', (e) => {
+            totalTarget = parseInt(e.target.value);
+            totalVal.innerText = totalTarget;
+            document.getElementById('maxProgressSpan').innerText = totalTarget;
+            if(!isAnimating) refreshPlots();
+            updateStats();
+        });
+        stepSlider.addEventListener('input', (e) => {
+            stepSize = parseInt(e.target.value);
+            stepVal.innerText = stepSize;
+        });
+        startBtn.addEventListener('click', startAnimation);
+        pauseBtn.addEventListener('click', stopAnimation);
+        resetBtn.addEventListener('click', () => {
+            stopAnimation();
+            resetAll();
+        });
+        stepBtn.addEventListener('click', () => {
+            if(isAnimating) stopAnimation();
+            stepForward();
+        });
+        
+        resetAll(); // 初始干净状态
+        totalTarget = 1200;
+        totalSlider.value = "1200";
+        totalVal.innerText = "1200";
+        stepSize = 50;
+        stepSlider.value = "50";
+        stepVal.innerText = "50";
+        document.getElementById('maxProgressSpan').innerText = "1200";
+        updateStats();
+    };
+</script>
+</body>
+</html>
