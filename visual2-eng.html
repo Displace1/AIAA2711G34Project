@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Sampling Process Visualization: Weighted Histogram Reconstruction of U(0,1) | Quad Grid</title>
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
+    <!-- KaTeX for math -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}] });"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+            background: linear-gradient(145deg, #f0f4fa, #e6ecf3);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.82);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
+            padding: 1.5rem 1.5rem 2rem;
+        }
+        h1 {
+            font-size: 1.7rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 0 0 0.2rem;
+        }
+        .sub {
+            color: #2c3e66;
+            border-left: 4px solid #3b82f6;
+            padding-left: 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        .math-badge {
+            background: #f1f5f9;
+            border-radius: 1rem;
+            padding: 0.5rem 1rem;
+            margin-bottom: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .truth-value {
+            font-family: monospace;
+            background: #1e293b;
+            color: #f1f5f9;
+            padding: 0.2rem 0.8rem;
+            border-radius: 2rem;
+        }
+        .grid-2x2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.2rem;
+            margin-bottom: 1.8rem;
+        }
+        .card {
+            background: white;
+            border-radius: 1.2rem;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 1px solid #eef2ff;
+        }
+        .card-header {
+            background: #f8fafd;
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid #e9edf2;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        .plot-area {
+            height: 320px;
+            width: 100%;
+        }
+        .stats-row {
+            padding: 5px 12px;
+            background: #f9fbfe;
+            font-size: 0.7rem;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #eef2f6;
+        }
+        .control-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            background: #ffffffcc;
+            backdrop-filter: blur(4px);
+            border-radius: 3rem;
+            padding: 0.6rem 1.2rem;
+            margin-top: 8px;
+        }
+        button {
+            background: linear-gradient(100deg, #f0f4f9, #e6ecf3);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #cfdde9;
+        }
+        button.primary {
+            background: linear-gradient(95deg, #2c3e66, #1a2c49);
+            color: white;
+            border: none;
+        }
+        button.primary:hover { transform: translateY(-1px); background: #1f3457; }
+        button:hover { background: #e2e8f0; }
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            padding: 3px 12px;
+            border-radius: 40px;
+        }
+        input[type="range"] { width: 150px; }
+        .value-display {
+            background: #1e293b;
+            color: #cbd5e6;
+            border-radius: 40px;
+            padding: 2px 8px;
+            font-family: monospace;
+            font-size: 0.7rem;
+        }
+        .status {
+            font-size: 0.75rem;
+            background: #e6f0fa;
+            border-radius: 2rem;
+            padding: 3px 12px;
+        }
+        .footer {
+            font-size: 0.7rem;
+            text-align: center;
+            color: #5b6e8c;
+            margin-top: 18px;
+        }
+        @media (max-width: 900px) { .grid-2x2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎯 Importance Sampling Weighted Reconstruction of U(0,1) Target | Quad-Grid Demo</h1>
+    <div class="sub">📐 Integral $I = \int_0^1 e^x dx = e-1 \approx 1.718281828$ &nbsp;|&nbsp; Weighted histogram should recover horizontal line $p(x)=1$</div>
+
+    <div class="math-badge">
+        <div>
+            <strong>⚙️ Three methods compared</strong><br>
+            ① Direct MC: samples $X_i\sim U(0,1)$ → histogram approximates target density<br>
+            ② Optimal IS: samples $X_i\sim q_{opt}(x)=\frac{e^x}{e-1}$, weights $w=1/q_{opt}$ → weighted histogram recovers $U(0,1)$<br>
+            ③ Suboptimal IS: samples $X_i\sim q_{bad}(x)=2x$, weights $w=1/(2x)$ → weighted histogram also recovers $U(0,1)$
+        </div>
+        <div class="truth-value">🎯 True value I = 1.718281828</div>
+    </div>
+
+    <div class="grid-2x2">
+        <!-- Direct MC: ordinary histogram -->
+        <div class="card">
+            <div class="card-header"><span>📊 Direct Monte Carlo (Direct MC)</span><span>weight=1</span></div>
+            <div id="hist-mc" class="plot-area"></div>
+            <div class="stats-row"><span>🧪 Sample count: <strong id="mc-n">0</strong></span><span>📈 Current estimate: <strong id="mc-est">—</strong></span></div>
+        </div>
+
+        <!-- Optimal IS: weighted histogram -->
+        <div class="card">
+            <div class="card-header"><span>✨ Optimal Importance Sampling (Optimal IS)</span><span>weighted reconstruction</span></div>
+            <div id="hist-opt" class="plot-area"></div>
+            <div class="stats-row"><span>📦 Sample count: <strong id="opt-n">0</strong></span><span>📈 Current estimate: <strong id="opt-est">—</strong></span></div>
+        </div>
+
+        <!-- Suboptimal IS: weighted histogram -->
+        <div class="card">
+            <div class="card-header"><span>⚠️ Suboptimal Importance Sampling (Linear IS)</span><span>weighted reconstruction (weights may be huge)</span></div>
+            <div id="hist-bad" class="plot-area"></div>
+            <div class="stats-row"><span>📦 Sample count: <strong id="bad-n">0</strong></span><span>📈 Current estimate: <strong id="bad-est">—</strong></span></div>
+        </div>
+
+        <!-- Convergence plot (y-axis scaled) -->
+        <div class="card">
+            <div class="card-header"><span>📉 Convergence of Integral Estimates</span><span>Red dashed: true value</span></div>
+            <div id="convergence-plot" class="plot-area"></div>
+            <div class="stats-row"><span>🎯 Optimal IS: exact per-sample weight → minimal variance</span><span>⚡ Suboptimal IS: larger fluctuations</span></div>
+        </div>
+    </div>
+
+    <div class="control-bar">
+        <div class="slider-group"><span>🔢 Max samples</span><input type="range" id="maxNSlider" min="200" max="5000" step="100" value="2000"><span id="maxNVal" class="value-display">2000</span></div>
+        <div class="slider-group"><span>⏩ Step size</span><input type="range" id="stepSlider" min="20" max="300" step="20" value="80"><span id="stepVal" class="value-display">80</span></div>
+        <button id="startAutoBtn" class="primary">▶ Auto sampling</button><button id="stepBtn">➕ Step</button><button id="resetBtn">🔄 Reset</button><button id="pauseBtn">⏸️ Pause</button>
+        <span class="status" id="animStatus">● Stopped</span>
+    </div>
+    <div class="footer">💡 Explanation: Weighted histograms use importance weights to reconstruct the target distribution $p(x)=1$ (horizontal line). Optimal IS yields constant weights (perfect reconstruction). Suboptimal IS produces extremely large weights near $x\to0$, leading to possible spikes near zero, but the mean estimate converges correctly.</div>
+</div>
+
+<script>
+    // ---------- Target: integrate f(x)=e^x, target distribution p(x)=1 (x∈[0,1]) ----------
+    const TRUE_VALUE = Math.E - 1;  // 1.718281828459045
+    function f(x) { return Math.exp(x); }
+
+    // 1. Direct MC: samples from Uniform(0,1)
+    function uniformSample() { return Math.random(); }
+
+    // 2. Optimal IS proposal q_opt(x) = e^x/(e-1), inverse CDF sampling
+    function optimalProposalSample() {
+        return Math.log(1 + Math.random() * (Math.E - 1));
+    }
+    function optimalPdf(x) { return Math.exp(x) / (Math.E - 1); }
+    function optimalWeight(x) { return 1 / optimalPdf(x); }   // p(x)=1
+
+    // 3. Suboptimal IS proposal q_bad(x) = 2x, inverse CDF sampling
+    function badProposalSample() {
+        return Math.sqrt(Math.random());
+    }
+    function badWeight(x) {
+        if (x < 1e-12) return 1e12;
+        return 1 / (2 * x);
+    }
+
+    // ---------- Sampler classes ----------
+    class DirectSampler {
+        constructor() { this.samples = []; this.sumF = 0; this.n = 0; }
+        addSamples(count) {
+            for (let i=0; i<count; i++) {
+                const x = uniformSample();
+                this.samples.push(x);
+                this.sumF += f(x);
+                this.n++;
+            }
+        }
+        getEstimate() { return this.n===0 ? NaN : this.sumF/this.n; }
+        reset() { this.samples = []; this.sumF = 0; this.n = 0; }
+    }
+
+    class OptimalSampler {
+        constructor() { this.samples = []; this.sumWeighted = 0; this.n = 0; }
+        addSamples(count) {
+            for (let i=0; i<count; i++) {
+                const x = optimalProposalSample();
+                this.samples.push(x);
+                const w = optimalWeight(x);
+                this.sumWeighted += f(x) * w;
+                this.n++;
+            }
+        }
+        getEstimate() { return this.n===0 ? NaN : this.sumWeighted/this.n; }
+        getAllWeights() { return this.samples.map(x => optimalWeight(x)); }
+        reset() { this.samples = []; this.sumWeighted = 0; this.n = 0; }
+    }
+
+    class BadSampler {
+        constructor() { this.samples = []; this.sumWeighted = 0; this.n = 0; }
+        addSamples(count) {
+            for (let i=0; i<count; i++) {
+                const x = badProposalSample();
+                this.samples.push(x);
+                const w = badWeight(x);
+                this.sumWeighted += f(x) * w;
+                this.n++;
+            }
+        }
+        getEstimate() { return this.n===0 ? NaN : this.sumWeighted/this.n; }
+        getAllWeights() { return this.samples.map(x => badWeight(x)); }
+        reset() { this.samples = []; this.sumWeighted = 0; this.n = 0; }
+    }
+
+    // ---------- Global state ----------
+    let mc = new DirectSampler();
+    let opt = new OptimalSampler();
+    let bad = new BadSampler();
+    let maxN = 2000, stepSize = 80;
+    let autoInterval = null, isAutoRunning = false;
+    let history = { n_points: [], mc_ests: [], opt_ests: [], bad_ests: [] };
+
+    // DOM elements
+    const histMcDiv = document.getElementById('hist-mc');
+    const histOptDiv = document.getElementById('hist-opt');
+    const histBadDiv = document.getElementById('hist-bad');
+    const convergenceDiv = document.getElementById('convergence-plot');
+    const mcNSpan = document.getElementById('mc-n'), optNSpan = document.getElementById('opt-n'), badNSpan = document.getElementById('bad-n');
+    const mcEstSpan = document.getElementById('mc-est'), optEstSpan = document.getElementById('opt-est'), badEstSpan = document.getElementById('bad-est');
+    const maxNSlider = document.getElementById('maxNSlider'), maxNVal = document.getElementById('maxNVal');
+    const stepSlider = document.getElementById('stepSlider'), stepVal = document.getElementById('stepVal');
+    const startAutoBtn = document.getElementById('startAutoBtn'), stepBtn = document.getElementById('stepBtn');
+    const resetBtn = document.getElementById('resetBtn'), pauseBtn = document.getElementById('pauseBtn');
+    const animStatusSpan = document.getElementById('animStatus');
+
+    // ---------- Helper: compute weighted histogram (density) ----------
+    function computeWeightedHistogram(samples, weights, bins=35, range=[0,1]) {
+        if (!samples.length) return { binCenters: [], densities: [] };
+        const [minX, maxX] = range;
+        const binWidth = (maxX - minX) / bins;
+        const binEdges = Array.from({length: bins+1}, (_,i) => minX + i*binWidth);
+        const counts = new Array(bins).fill(0);
+        let totalWeight = 0;
+        for (let i=0; i<samples.length; i++) {
+            const x = samples[i];
+            if (x < minX || x > maxX) continue;
+            const idx = Math.min(Math.floor((x - minX) / binWidth), bins-1);
+            const w = weights[i];
+            counts[idx] += w;
+            totalWeight += w;
+        }
+        // density = (weighted count in bin) / (totalWeight * binWidth) so that integral = 1
+        const densities = counts.map(c => c / (totalWeight * binWidth));
+        const binCenters = binEdges.slice(0, -1).map((e,i) => e + binWidth/2);
+        return { binCenters, densities };
+    }
+
+    // Draw ordinary histogram (no weights)
+    function drawUniformHistogram(divId, samples, titleSuffix, n) {
+        if (!samples.length) {
+            Plotly.react(divId, [{x:[0,1], y:[1,1], mode:'lines', name:'Target p(x)=1', line:{color:'#e11d48', dash:'dot'}}], {
+                title: `${titleSuffix} (n=0)`, xaxis:{title:'x', range:[0,1]}, yaxis:{title:'Density', range:[0,1.8]}, margin:{t:35}
+            });
+            return;
+        }
+        const histTrace = {
+            x: samples, type:'histogram', histnorm:'probability density', nbinsx:35,
+            marker:{color:'#3b82f6', opacity:0.6}, name:'Sample histogram'
+        };
+        const theoryTrace = { x:[0,1], y:[1,1], mode:'lines', name:'Target p(x)=1', line:{color:'#e11d48', width:2.5, dash:'dot'} };
+        Plotly.react(divId, [histTrace, theoryTrace], {
+            title: `${titleSuffix} (n=${n})`, xaxis:{title:'x', range:[0,1]}, yaxis:{title:'Density', range:[0,1.8]},
+            bargap:0.05, margin:{t:35}, legend:{orientation:'h', y:-0.2}
+        }, {displayModeBar:false});
+    }
+
+    // Draw weighted histogram (manually computed density)
+    function drawWeightedHistogram(divId, samples, weights, titleSuffix, n) {
+        if (!samples.length) {
+            Plotly.react(divId, [{x:[0,1], y:[1,1], mode:'lines', name:'Target p(x)=1', line:{color:'#e11d48', dash:'dot'}}], {
+                title: `${titleSuffix} (n=0)`, xaxis:{title:'x', range:[0,1]}, yaxis:{title:'Density', range:[0,1.8]}, margin:{t:35}
+            });
+            return;
+        }
+        const { binCenters, densities } = computeWeightedHistogram(samples, weights, 35, [0,1]);
+        const barTrace = {
+            x: binCenters, y: densities, type:'bar', width: 1/35,
+            marker:{color:'#10b981', opacity:0.7}, name:'Weighted histogram (reconstructed p(x))'
+        };
+        const theoryTrace = { x:[0,1], y:[1,1], mode:'lines', name:'Target p(x)=1', line:{color:'#e11d48', width:2.5, dash:'dot'} };
+        let yMax = Math.max(1.8, ...densities.map(d=>d*1.1));
+        yMax = Math.min(yMax, 4.0); // avoid excessive stretching but keep spikes visible
+        Plotly.react(divId, [barTrace, theoryTrace], {
+            title: `${titleSuffix} (n=${n})`, xaxis:{title:'x', range:[0,1]}, yaxis:{title:'Density', range:[0, yMax]},
+            bargap:0.05, margin:{t:35}, legend:{orientation:'h', y:-0.2}
+        }, {displayModeBar:false});
+    }
+
+    // Update all histograms
+    function updateHistograms() {
+        drawUniformHistogram(histMcDiv, mc.samples, 'Direct MC (Sampling distribution)', mc.n);
+        drawWeightedHistogram(histOptDiv, opt.samples, opt.getAllWeights(), 'Optimal IS (weighted reconstruction)', opt.n);
+        drawWeightedHistogram(histBadDiv, bad.samples, bad.getAllWeights(), 'Suboptimal IS (weighted reconstruction)', bad.n);
+    }
+
+    // Convergence curve (y-axis range: [TRUE_VALUE-0.8, TRUE_VALUE+0.8])
+    function updateConvergenceCurve() {
+        if (history.n_points.length === 0) {
+            Plotly.react(convergenceDiv, [{x:[0,maxN], y:[TRUE_VALUE,TRUE_VALUE], mode:'lines', name:'True value', line:{color:'red',dash:'dash'}}], {
+                title:'Waiting for samples...', xaxis:{title:'Sample count N'}, yaxis:{title:'Estimate Î', range:[TRUE_VALUE-0.2, TRUE_VALUE+0.2]}
+            });
+            return;
+        }
+        const traces = [
+            { x: history.n_points, y: history.mc_ests, mode:'lines+markers', name:'Direct MC', line:{color:'#3b82f6', width:2}, marker:{size:3} },
+            { x: history.n_points, y: history.opt_ests, mode:'lines+markers', name:'Optimal IS', line:{color:'#10b981', width:2, dash:'dot'}, marker:{size:3} },
+            { x: history.n_points, y: history.bad_ests, mode:'lines+markers', name:'Suboptimal IS', line:{color:'#f97316', width:2}, marker:{size:3} },
+            { x: [0, maxN], y: [TRUE_VALUE, TRUE_VALUE], mode:'lines', name:'True value e-1', line:{color:'red', width:2, dash:'dash'} }
+        ];
+        const layout = {
+            title: `Integral estimate convergence (current N=${mc.n})`, xaxis:{title:'Sample count N', range:[0, maxN]},
+            yaxis:{title:'Estimate', range:[TRUE_VALUE-0.2, TRUE_VALUE+0.2]}, hovermode:'closest',
+            legend:{orientation:'h', y:-0.2}, margin:{t:40, l:45, r:25, b:35}
+        };
+        Plotly.react(convergenceDiv, traces, layout, {displayModeBar:false});
+    }
+
+    function updateStats() {
+        mcNSpan.innerText = mc.n; optNSpan.innerText = opt.n; badNSpan.innerText = bad.n;
+        mcEstSpan.innerText = mc.getEstimate().toFixed(6);
+        optEstSpan.innerText = opt.getEstimate().toFixed(6);
+        badEstSpan.innerText = bad.getEstimate().toFixed(6);
+    }
+
+    function recordHistory() {
+        const n = mc.n;
+        if (history.n_points.length && history.n_points[history.n_points.length-1] === n) return;
+        history.n_points.push(n);
+        history.mc_ests.push(mc.getEstimate());
+        history.opt_ests.push(opt.getEstimate());
+        history.bad_ests.push(bad.getEstimate());
+    }
+
+    function refreshVisuals() { updateHistograms(); updateConvergenceCurve(); updateStats(); }
+
+    function addBatch() {
+        if (mc.n >= maxN) { if (isAutoRunning) stopAutoRun(); animStatusSpan.innerText = '● Completed'; return false; }
+        let remaining = maxN - mc.n;
+        let batch = Math.min(stepSize, remaining);
+        if (batch <= 0) return false;
+        mc.addSamples(batch);
+        opt.addSamples(batch);
+        bad.addSamples(batch);
+        recordHistory();
+        refreshVisuals();
+        return true;
+    }
+
+    function stepOnce() {
+        if (mc.n >= maxN) { animStatusSpan.innerText = '● Upper limit reached'; if (isAutoRunning) stopAutoRun(); return; }
+        addBatch();
+        if (mc.n >= maxN) { animStatusSpan.innerText = '● Completed'; stopAutoRun(); }
+    }
+
+    function startAutoRun() {
+        if (isAutoRunning) return;
+        if (mc.n >= maxN) { animStatusSpan.innerText = '● Completed'; return; }
+        isAutoRunning = true;
+        animStatusSpan.innerText = '▶ Sampling ...';
+        if (autoInterval) clearInterval(autoInterval);
+        autoInterval = setInterval(() => {
+            if (!isAutoRunning) return;
+            if (mc.n >= maxN) { stopAutoRun(); animStatusSpan.innerText = '● Completed'; return; }
+            addBatch();
+            if (mc.n >= maxN) { stopAutoRun(); animStatusSpan.innerText = '● Completed'; }
+        }, 65);
+    }
+
+    function stopAutoRun() {
+        if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+        isAutoRunning = false;
+        animStatusSpan.innerText = mc.n >= maxN ? '● Completed' : '● Paused';
+    }
+
+    function resetAll() {
+        stopAutoRun();
+        mc.reset(); opt.reset(); bad.reset();
+        history = { n_points: [], mc_ests: [], opt_ests: [], bad_ests: [] };
+        recordHistory();  // n=0 record
+        refreshVisuals();
+        animStatusSpan.innerText = '● Reset';
+    }
+
+    function syncSliders() {
+        maxN = parseInt(maxNSlider.value);
+        maxNVal.innerText = maxN;
+        stepSize = parseInt(stepSlider.value);
+        stepVal.innerText = stepSize;
+        updateConvergenceCurve();
+    }
+
+    function bindEvents() {
+        startAutoBtn.addEventListener('click', startAutoRun);
+        pauseBtn.addEventListener('click', stopAutoRun);
+        stepBtn.addEventListener('click', stepOnce);
+        resetBtn.addEventListener('click', resetAll);
+        maxNSlider.addEventListener('input', syncSliders);
+        stepSlider.addEventListener('input', () => { stepSize = parseInt(stepSlider.value); stepVal.innerText = stepSize; });
+    }
+
+    function init() { bindEvents(); resetAll(); }
+    init();
+</script>
+</body>
+</html>
