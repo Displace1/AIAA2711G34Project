@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>采样过程可视化：蒙特卡洛 vs 重要性采样 (动态收敛)</title>
+    <title>采样过程可视化：直接MC vs 最优IS vs 次优IS | 动态直方图+收敛曲线</title>
     <!-- Plotly 绘图库 -->
     <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
-    <!-- KaTeX 公式渲染 -->
+    <!-- KaTeX 数学公式 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}] });"></script>
@@ -21,13 +21,13 @@
             padding: 20px;
         }
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
-            background: rgba(255,255,255,0.78);
+            background: rgba(255,255,255,0.8);
             backdrop-filter: blur(2px);
             border-radius: 2rem;
             box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
-            padding: 1.5rem 2rem 2rem;
+            padding: 1.5rem 1.8rem 2rem;
         }
         h1 {
             font-size: 1.8rem;
@@ -42,52 +42,68 @@
             color: #2c3e66;
             border-left: 4px solid #3b82f6;
             padding-left: 16px;
-            margin-bottom: 24px;
-            font-size: 0.95rem;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
         }
-        .math-card {
+        .math-desc {
             background: #f8fafc;
             border-radius: 1.2rem;
-            padding: 0.8rem 1.5rem;
-            margin-bottom: 20px;
+            padding: 0.7rem 1.2rem;
+            margin-bottom: 25px;
             font-size: 0.85rem;
             border: 1px solid #e2e8f0;
-        }
-        .plot-area {
-            height: 420px;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        .stats-panel {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem;
             justify-content: space-between;
-            background: #ffffffcc;
-            border-radius: 1.5rem;
-            padding: 1rem 1.5rem;
-            margin: 15px 0;
-            backdrop-filter: blur(4px);
+            align-items: center;
         }
-        .stat-card {
+        .truth-badge {
+            background: #1e293b;
+            color: #f1f5f9;
+            border-radius: 2rem;
+            padding: 0.2rem 1rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+        .plots-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
             background: white;
-            border-radius: 1rem;
-            padding: 0.5rem 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            flex: 1;
-            min-width: 150px;
-            text-align: center;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             border: 1px solid #eef2ff;
         }
-        .stat-card .label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            color: #4b5563;
+        .card-header {
+            background: #f8fafd;
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid #e9edf2;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
         }
-        .stat-card .value {
-            font-size: 1.2rem;
-            font-weight: bold;
-            font-family: monospace;
+        .plot-area {
+            height: 330px;
+            width: 100%;
+        }
+        .convergence-card {
+            margin-top: 0.5rem;
+        }
+        .convergence-card .plot-area {
+            height: 380px;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 15px;
+            background: #f9fbfe;
+            font-size: 0.75rem;
+            border-top: 1px solid #eef2f6;
         }
         .control-bar {
             display: flex;
@@ -95,6 +111,10 @@
             gap: 12px;
             align-items: center;
             margin: 20px 0 10px;
+            background: #ffffffcc;
+            backdrop-filter: blur(4px);
+            border-radius: 3rem;
+            padding: 0.8rem 1.5rem;
         }
         button {
             background: linear-gradient(100deg, #f0f4f9, #e6ecf3);
@@ -123,14 +143,13 @@
         .slider-group {
             display: flex;
             align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
+            gap: 12px;
             background: #f1f5f9;
-            padding: 8px 16px;
-            border-radius: 60px;
+            padding: 5px 15px;
+            border-radius: 40px;
         }
         input[type="range"] {
-            width: 200px;
+            width: 180px;
         }
         .value-display {
             background: #1e293b;
@@ -138,17 +157,13 @@
             border-radius: 40px;
             padding: 4px 12px;
             font-family: monospace;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
         .status {
             font-size: 0.8rem;
             background: #e6f0fa;
             border-radius: 2rem;
-            padding: 4px 12px;
-        }
-        hr {
-            margin: 16px 0;
-            border-color: #cbd5e1;
+            padding: 4px 14px;
         }
         .footer {
             font-size: 0.7rem;
@@ -156,34 +171,77 @@
             color: #5b6e8c;
             margin-top: 20px;
         }
-        @media (max-width: 700px) {
+        @media (max-width: 1000px) {
+            .plots-grid { grid-template-columns: 1fr; }
             .container { padding: 1rem; }
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>📈 采样过程可视化：直接MC vs 最优IS vs 次优IS</h1>
-    <div class="sub">🎯 积分 $I = \int_0^1 e^x dx = e-1 \approx 1.718281828459045$ &nbsp;|&nbsp; 动态观察估计值随样本数的收敛过程</div>
+    <h1>🎲 采样过程可视化：直接MC vs 最优IS vs 次优IS</h1>
+    <div class="sub">📐 积分 $I = \int_0^1 e^x dx = e-1 \approx 1.718281828459045$ &nbsp;|&nbsp; 动态观察样本直方图与估计值收敛</div>
 
-    <div class="math-card">
-        <p><strong>⚙️ 三种估计量（逐步累积采样）</strong><br>
-        1️⃣ <strong>直接MC</strong>: $X_i \sim U(0,1)$，$\hat{I}_{MC}(n) = \frac{1}{n}\sum_{i=1}^n e^{X_i}$<br>
-        2️⃣ <strong>最优IS (Optimal)</strong>: 提议 $q_{opt}(x)=\frac{e^x}{e-1}$，权重 $w_{opt}(x)=\frac{e-1}{e^x}$，$\hat{I}_{opt}(n) = \frac{1}{n}\sum_{i=1}^n e^{X_i} w_{opt}(X_i)$<br>
-        3️⃣ <strong>次优IS (Linear)</strong>: 提议 $q_{bad}(x)=2x$，权重 $w_{bad}(x)=\frac{1}{2x}$，$\hat{I}_{bad}(n) = \frac{1}{n}\sum_{i=1}^n e^{X_i} w_{bad}(X_i)$<br>
-        🧪 <strong>演示效果</strong>：随着样本增加，最优IS几乎瞬间收敛（方差为零），次优IS收敛缓慢且波动大。
-        </p>
+    <div class="math-desc">
+        <div>⚙️ <strong>三种估计量（累积采样）</strong><br>
+        ① 直接MC: $X_i\sim U(0,1)$，$\hat{I}_{MC}=\frac{1}{n}\sum e^{X_i}$<br>
+        ② 最优IS: $q_{opt}(x)=\frac{e^x}{e-1}$, $w_{opt}=\frac{e-1}{e^x}$, $\hat{I}_{opt}=\frac{1}{n}\sum e^{X_i}w_{opt}(X_i)$<br>
+        ③ 次优IS: $q_{bad}(x)=2x$, $w_{bad}=\frac{1}{2x}$, $\hat{I}_{bad}=\frac{1}{n}\sum e^{X_i}w_{bad}(X_i)$
+        </div>
+        <div class="truth-badge">🎯 真值 = 1.718281828459045</div>
     </div>
 
-    <!-- 收敛曲线图 -->
-    <div id="convergence-plot" class="plot-area"></div>
+    <!-- 前三图: 三个方法的直方图 + 理论分布曲线 -->
+    <div class="plots-grid">
+        <!-- 直接MC -->
+        <div class="card">
+            <div class="card-header">
+                <span>📊 直接蒙特卡洛 (直接MC)</span>
+                <span>提议分布: Uniform(0,1)</span>
+            </div>
+            <div id="hist-mc" class="plot-area"></div>
+            <div class="stats-row">
+                <span>📦 样本数: <strong id="mc-n">0</strong></span>
+                <span>📈 当前估计: <strong id="mc-est">—</strong></span>
+            </div>
+        </div>
+        <!-- 最优IS -->
+        <div class="card">
+            <div class="card-header">
+                <span>✨ 最优重要性采样 (Optimal IS)</span>
+                <span>提议分布: $q_{opt}(x)=e^x/(e-1)$</span>
+            </div>
+            <div id="hist-opt" class="plot-area"></div>
+            <div class="stats-row">
+                <span>📦 样本数: <strong id="opt-n">0</strong></span>
+                <span>📈 当前估计: <strong id="opt-est">—</strong></span>
+            </div>
+        </div>
+        <!-- 次优IS -->
+        <div class="card">
+            <div class="card-header">
+                <span>⚠️ 次优重要性采样 (Linear IS)</span>
+                <span>提议分布: $q_{bad}(x)=2x$</span>
+            </div>
+            <div id="hist-bad" class="plot-area"></div>
+            <div class="stats-row">
+                <span>📦 样本数: <strong id="bad-n">0</strong></span>
+                <span>📈 当前估计: <strong id="bad-est">—</strong></span>
+            </div>
+        </div>
+    </div>
 
-    <!-- 当前估计值卡片 -->
-    <div class="stats-panel" id="stats-panel">
-        <div class="stat-card"><div class="label">直接MC 当前估计</div><div class="value" id="mc-est">—</div></div>
-        <div class="stat-card"><div class="label">最优IS 当前估计</div><div class="value" id="opt-est">—</div></div>
-        <div class="stat-card"><div class="label">次优IS 当前估计</div><div class="value" id="bad-est">—</div></div>
-        <div class="stat-card"><div class="label">已采样总数 N</div><div class="value" id="current-n">0</div></div>
+    <!-- 第四图: 估计值收敛曲线 -->
+    <div class="card convergence-card">
+        <div class="card-header">
+            <span>📉 三种估计量收敛曲线 vs 样本量</span>
+            <span>真实值 (红色虚线) = 1.71828</span>
+        </div>
+        <div id="convergence-plot" class="plot-area"></div>
+        <div class="stats-row">
+            <span>🎯 最优IS理论上单样本精确，方差接近0</span>
+            <span>⚡ 次优IS因权重爆炸导致收敛缓慢且波动大</span>
+        </div>
     </div>
 
     <div class="control-bar">
@@ -194,142 +252,156 @@
         </div>
         <div class="slider-group">
             <span>⏩ 每次步进步长</span>
-            <input type="range" id="stepSlider" min="10" max="500" step="10" value="100">
-            <span id="stepVal" class="value-display">100</span>
+            <input type="range" id="stepSlider" min="10" max="300" step="10" value="80">
+            <span id="stepVal" class="value-display">80</span>
         </div>
-        <button id="startAutoBtn" class="primary">▶ 自动采样 (逐步)</button>
+        <button id="startAutoBtn" class="primary">▶ 自动采样</button>
         <button id="stepBtn">➕ 单步增加</button>
         <button id="resetBtn">🔄 重置采样</button>
         <button id="pauseBtn">⏸️ 暂停</button>
         <span class="status" id="animStatus">● 已停止</span>
     </div>
     <div class="footer">
-        💡 提示：每次步进会向每个估计器添加一批新样本，并重新计算累积均值。最优IS理论上单样本即精确，但由于浮点误差可能在极小区间内浮动。次优IS因权重在0附近爆炸导致估计不稳定。
+        💡 说明：每个子图的直方图展示了从对应提议分布采集的原始样本（不加权）的分布，并与理论概率密度曲线对比。收敛图显示积分估计值随样本累计的变化过程。
     </div>
 </div>
 
 <script>
-    // ---------- 数学函数与分布 ----------
+    // ---------- 数学定义与采样器 ----------
     const TRUE_VALUE = Math.E - 1;  // 1.718281828459045
 
-    // 直接MC: U(0,1) 样本
-    function uniformSample() {
-        return Math.random();
-    }
+    // 辅助函数: 均匀分布采样
+    function uniformSample() { return Math.random(); }
+    // 目标函数 f(x) = e^x
+    function f(x) { return Math.exp(x); }
 
-    // 最优IS提议分布: q_opt(x) = e^x/(e-1) 逆变换采样
+    // 最优提议分布 q_opt(x) = e^x/(e-1), CDF: (e^x - 1)/(e-1)
     function optimalProposalSample() {
         const u = Math.random();
         return Math.log(1 + u * (Math.E - 1));
+    }
+    function optimalPdf(x) {
+        return Math.exp(x) / (Math.E - 1);
     }
     function optimalWeight(x) {
         return (Math.E - 1) / Math.exp(x);
     }
 
-    // 次优IS提议分布: q_bad(x) = 2x, 逆变换 x = sqrt(u)
+    // 次优提议分布 q_bad(x) = 2x, x∈[0,1], CDF: x^2, 逆变换 x = sqrt(u)
     function badProposalSample() {
         return Math.sqrt(Math.random());
+    }
+    function badPdf(x) {
+        if (x < 0 || x > 1) return 0;
+        return 2 * x;
     }
     function badWeight(x) {
         if (x < 1e-12) return 1e12;
         return 1 / (2 * x);
     }
 
-    // ---------- 三个采样器类 (累积状态) ----------
-    class DirectMCSampler {
+    // ---------- 三个采样器（累积状态，用于直方图与估计值）----------
+    class DirectSampler {
         constructor() {
+            this.samples = [];   // 存储原始样本 x
+            this.sumF = 0;
             this.n = 0;
-            this.sum = 0;   // 累积 sum(f(x_i))
         }
         addSamples(count) {
             for (let i = 0; i < count; i++) {
                 const x = uniformSample();
-                this.sum += Math.exp(x);
+                this.samples.push(x);
+                this.sumF += f(x);
                 this.n++;
             }
         }
         getEstimate() {
             if (this.n === 0) return NaN;
-            return this.sum / this.n;
+            return this.sumF / this.n;
         }
         reset() {
+            this.samples = [];
+            this.sumF = 0;
             this.n = 0;
-            this.sum = 0;
         }
     }
 
-    class OptimalISSampler {
+    class OptimalSampler {
         constructor() {
+            this.samples = [];   // 存储从 q_opt 采样的 x
+            this.sumWeighted = 0;
             this.n = 0;
-            this.sum = 0;   // 累积 sum( f(x) * w(x) )
         }
         addSamples(count) {
             for (let i = 0; i < count; i++) {
                 const x = optimalProposalSample();
-                const f = Math.exp(x);
+                this.samples.push(x);
                 const w = optimalWeight(x);
-                this.sum += f * w;
+                this.sumWeighted += f(x) * w;
                 this.n++;
             }
         }
         getEstimate() {
             if (this.n === 0) return NaN;
-            return this.sum / this.n;
+            return this.sumWeighted / this.n;
         }
         reset() {
+            this.samples = [];
+            this.sumWeighted = 0;
             this.n = 0;
-            this.sum = 0;
         }
     }
 
-    class BadISSampler {
+    class BadSampler {
         constructor() {
+            this.samples = [];
+            this.sumWeighted = 0;
             this.n = 0;
-            this.sum = 0;
         }
         addSamples(count) {
             for (let i = 0; i < count; i++) {
                 const x = badProposalSample();
-                const f = Math.exp(x);
+                this.samples.push(x);
                 const w = badWeight(x);
-                this.sum += f * w;
+                this.sumWeighted += f(x) * w;
                 this.n++;
             }
         }
         getEstimate() {
             if (this.n === 0) return NaN;
-            return this.sum / this.n;
+            return this.sumWeighted / this.n;
         }
         reset() {
+            this.samples = [];
+            this.sumWeighted = 0;
             this.n = 0;
-            this.sum = 0;
         }
     }
 
     // ---------- 全局状态 ----------
-    let mcSampler = new DirectMCSampler();
-    let optSampler = new OptimalISSampler();
-    let badSampler = new BadISSampler();
-
-    let maxN = 2000;           // 目标总样本数
-    let stepSize = 100;        // 每次步进添加的样本数
+    let mc = new DirectSampler();
+    let opt = new OptimalSampler();
+    let bad = new BadSampler();
+    
+    let maxN = 2000;
+    let stepSize = 80;
     let autoInterval = null;
     let isAutoRunning = false;
 
-    // 存储历史数据用于绘图 (每步记录一次)
-    let history = {
-        n_points: [],      // 样本数点 (每次采样后的总样本量)
-        mc_ests: [],
-        opt_ests: [],
-        bad_ests: []
-    };
+    // 存储收敛曲线历史数据 (每步记录)
+    let history = { n_points: [], mc_ests: [], opt_ests: [], bad_ests: [] };
 
     // DOM 元素
+    const histMcDiv = document.getElementById('hist-mc');
+    const histOptDiv = document.getElementById('hist-opt');
+    const histBadDiv = document.getElementById('hist-bad');
     const convergenceDiv = document.getElementById('convergence-plot');
+    const mcNSpan = document.getElementById('mc-n');
+    const optNSpan = document.getElementById('opt-n');
+    const badNSpan = document.getElementById('bad-n');
     const mcEstSpan = document.getElementById('mc-est');
     const optEstSpan = document.getElementById('opt-est');
     const badEstSpan = document.getElementById('bad-est');
-    const currentNSpan = document.getElementById('current-n');
     const maxNSlider = document.getElementById('maxNSlider');
     const maxNVal = document.getElementById('maxNVal');
     const stepSlider = document.getElementById('stepSlider');
@@ -340,85 +412,139 @@
     const pauseBtn = document.getElementById('pauseBtn');
     const animStatusSpan = document.getElementById('animStatus');
 
-    // 更新UI数值与图表
-    function updateUI() {
-        const mcEst = mcSampler.getEstimate();
-        const optEst = optSampler.getEstimate();
-        const badEst = badSampler.getEstimate();
-        const currentN = mcSampler.n;  // 三者n相同（步进时每次同步增加相同数量）
-        mcEstSpan.innerText = mcEst.toFixed(8);
-        optEstSpan.innerText = optEst.toFixed(8);
-        badEstSpan.innerText = badEst.toFixed(8);
-        currentNSpan.innerText = currentN;
-    }
-
-    // 记录当前状态到历史 (避免重复记录相同n)
-    function recordCurrentState() {
-        const n = mcSampler.n;
-        if (history.n_points.length > 0 && history.n_points[history.n_points.length-1] === n) {
-            // 相同n不重复记录
+    // ---------- 辅助函数：绘制直方图 + 理论密度曲线 ----------
+    function drawHistogram(divId, samples, pdfFunc, xRange, titleSuffix, samplerName) {
+        if (!samples.length) {
+            // 空数据：只显示理论曲线
+            const xVals = [];
+            const yVals = [];
+            for (let x = xRange[0]; x <= xRange[1]; x += 0.02) {
+                xVals.push(x);
+                yVals.push(pdfFunc(x));
+            }
+            const traceTheory = {
+                x: xVals, y: yVals, type: 'scatter', mode: 'lines',
+                name: `理论密度 ${samplerName}`, line: { color: '#e11d48', width: 2.5, dash: 'dot' }
+            };
+            Plotly.react(divId, [traceTheory], {
+                title: { text: `${samplerName} (暂无样本)`, font: { size: 12 } },
+                xaxis: { title: 'x', range: xRange },
+                yaxis: { title: '密度' },
+                margin: { t: 40, l: 40, r: 20, b: 30 },
+                showlegend: true
+            });
             return;
         }
-        history.n_points.push(n);
-        history.mc_ests.push(mcSampler.getEstimate());
-        history.opt_ests.push(optSampler.getEstimate());
-        history.bad_ests.push(badSampler.getEstimate());
+        
+        // 计算直方图: 使用 plotly 的 histogram trace，并归一化为密度
+        const histTrace = {
+            x: samples,
+            type: 'histogram',
+            histnorm: 'probability density',
+            name: '采样直方图',
+            marker: { color: '#3b82f6', opacity: 0.6, line: { color: '#1e40af', width: 0.5 } },
+            nbinsx: 35
+        };
+        // 理论密度曲线
+        const xVals = [];
+        const yVals = [];
+        for (let x = xRange[0]; x <= xRange[1]; x += 0.02) {
+            xVals.push(x);
+            yVals.push(pdfFunc(x));
+        }
+        const theoryTrace = {
+            x: xVals, y: yVals, type: 'scatter', mode: 'lines',
+            name: `理论密度`, line: { color: '#e11d48', width: 2.5, dash: 'dot' }
+        };
+        const layout = {
+            title: { text: `${samplerName} (n=${samples.length})`, font: { size: 12 } },
+            xaxis: { title: 'x', range: xRange },
+            yaxis: { title: '密度' },
+            bargap: 0.05,
+            margin: { t: 40, l: 40, r: 20, b: 30 },
+            legend: { orientation: 'h', y: -0.2 }
+        };
+        Plotly.react(divId, [histTrace, theoryTrace], layout, { displayModeBar: false });
     }
 
-    // 绘制收敛曲线 (使用plotly)
-    function drawConvergence() {
+    // 更新所有直方图 (基于当前样本)
+    function updateHistograms() {
+        // 直接MC: 样本来自 U(0,1)，理论密度 = 1
+        const uniformPdf = (x) => (x>=0 && x<=1) ? 1 : 0;
+        drawHistogram(histMcDiv, mc.samples, uniformPdf, [0, 1], '直接MC', 'Uniform(0,1)');
+        // 最优IS: 样本来自 q_opt(x)
+        drawHistogram(histOptDiv, opt.samples, optimalPdf, [0, 1], '最优IS', 'q_opt(x)=e^x/(e-1)');
+        // 次优IS: 样本来自 q_bad(x)=2x
+        const badPdfFunc = (x) => (x>=0 && x<=1) ? 2*x : 0;
+        drawHistogram(histBadDiv, bad.samples, badPdfFunc, [0, 1], '次优IS', 'q_bad(x)=2x');
+    }
+
+    // 更新收敛曲线（基于历史记录）
+    function updateConvergenceCurve() {
         if (history.n_points.length === 0) {
-            // 空数据占位
-            const traceEmpty = { x: [0], y: [TRUE_VALUE], mode: 'lines', name: '真值' };
-            Plotly.react(convergenceDiv, [traceEmpty], { title: '等待采样...' });
+            const traceTruth = { x: [0, maxN], y: [TRUE_VALUE, TRUE_VALUE], mode: 'lines', name: '真实值', line: { color: 'red', dash: 'dash' } };
+            Plotly.react(convergenceDiv, [traceTruth], {
+                title: '等待采样...', xaxis: { title: '样本数量 N' }, yaxis: { title: '估计值 Î' }
+            });
             return;
         }
         const traceMC = {
-            x: history.n_points,
-            y: history.mc_ests,
-            mode: 'lines+markers',
-            name: '直接MC',
-            line: { color: '#3b82f6', width: 2 },
-            marker: { size: 4 },
-            connectgaps: false
+            x: history.n_points, y: history.mc_ests, mode: 'lines+markers', name: '直接MC',
+            line: { color: '#3b82f6', width: 2 }, marker: { size: 3 }
         };
         const traceOpt = {
-            x: history.n_points,
-            y: history.opt_ests,
-            mode: 'lines+markers',
-            name: '最优IS (Optimal)',
-            line: { color: '#10b981', width: 2, dash: 'dot' },
-            marker: { size: 4 }
+            x: history.n_points, y: history.opt_ests, mode: 'lines+markers', name: '最优IS',
+            line: { color: '#10b981', width: 2, dash: 'dot' }, marker: { size: 3 }
         };
         const traceBad = {
-            x: history.n_points,
-            y: history.bad_ests,
-            mode: 'lines+markers',
-            name: '次优IS (Linear)',
-            line: { color: '#f97316', width: 2 },
-            marker: { size: 4 }
+            x: history.n_points, y: history.bad_ests, mode: 'lines+markers', name: '次优IS',
+            line: { color: '#f97316', width: 2 }, marker: { size: 3 }
         };
         const traceTruth = {
-            x: [0, maxN],
-            y: [TRUE_VALUE, TRUE_VALUE],
-            mode: 'lines',
-            name: `真实值 = ${TRUE_VALUE.toFixed(8)}`,
+            x: [0, maxN], y: [TRUE_VALUE, TRUE_VALUE], mode: 'lines', name: '真值 e-1',
             line: { color: 'red', width: 2, dash: 'dash' }
         };
         const layout = {
-            title: { text: `估计值随样本量的收敛过程 (当前N=${mcSampler.n} / ${maxN})`, font: { size: 13 } },
+            title: { text: `估计值收敛过程 (当前N=${mc.n} / ${maxN})`, font: { size: 13 } },
             xaxis: { title: '样本数量 N', range: [0, maxN], tickformat: ',d' },
-            yaxis: { title: '积分估计值 Î', range: [TRUE_VALUE - 0.5, TRUE_VALUE + 0.5], tickformat: '.4f' },
+            yaxis: { title: '积分估计值', range: [TRUE_VALUE - 0.4, TRUE_VALUE + 0.4] },
             hovermode: 'closest',
             legend: { orientation: 'h', y: -0.2 },
             margin: { t: 50, l: 50, r: 30, b: 50 }
         };
-        Plotly.react(convergenceDiv, [traceMC, traceOpt, traceBad, traceTruth], layout, { displayModeBar: false, responsive: true });
+        Plotly.react(convergenceDiv, [traceMC, traceOpt, traceBad, traceTruth], layout, { displayModeBar: false });
     }
 
-    // 核心：添加一批样本 (step个) 到所有采样器，但不超过 maxN
+    // 更新所有UI统计数据
+    function updateStats() {
+        mcNSpan.innerText = mc.n;
+        optNSpan.innerText = opt.n;
+        badNSpan.innerText = bad.n;
+        mcEstSpan.innerText = mc.getEstimate().toFixed(8);
+        optEstSpan.innerText = opt.getEstimate().toFixed(8);
+        badEstSpan.innerText = bad.getEstimate().toFixed(8);
+    }
+
+    // 记录当前状态到收敛历史 (避免重复记录相同n)
+    function recordHistory() {
+        const n = mc.n;
+        if (history.n_points.length > 0 && history.n_points[history.n_points.length-1] === n) return;
+        history.n_points.push(n);
+        history.mc_ests.push(mc.getEstimate());
+        history.opt_ests.push(opt.getEstimate());
+        history.bad_ests.push(bad.getEstimate());
+    }
+
+    // 刷新所有图形 (直方图 + 收敛曲线)
+    function refreshVisuals() {
+        updateHistograms();
+        updateConvergenceCurve();
+        updateStats();
+    }
+
+    // ---------- 核心采样逻辑：批量添加样本 ----------
     function addBatch() {
-        const currentN = mcSampler.n;
+        const currentN = mc.n;
         if (currentN >= maxN) {
             if (isAutoRunning) stopAutoRun();
             animStatusSpan.innerText = '● 已完成';
@@ -428,42 +554,41 @@
         let batch = Math.min(stepSize, remaining);
         if (batch <= 0) return false;
         
-        mcSampler.addSamples(batch);
-        optSampler.addSamples(batch);
-        badSampler.addSamples(batch);
+        // 同时向三个采样器添加 batch 个样本
+        mc.addSamples(batch);
+        opt.addSamples(batch);
+        bad.addSamples(batch);
         
-        // 记录状态并更新图表
-        recordCurrentState();
-        updateUI();
-        drawConvergence();
+        // 记录历史并刷新可视化
+        recordHistory();
+        refreshVisuals();
         return true;
     }
     
-    // 重置所有采样器和历史
-    function resetSamplers() {
+    // 重置所有数据
+    function resetAll() {
         stopAutoRun();
-        mcSampler.reset();
-        optSampler.reset();
-        badSampler.reset();
-        // 重置历史，但保留初始点 (n=0)
+        mc.reset();
+        opt.reset();
+        bad.reset();
+        // 重置历史
         history = { n_points: [], mc_ests: [], opt_ests: [], bad_ests: [] };
-        // 记录初始状态
-        recordCurrentState();
-        updateUI();
-        drawConvergence();
+        // 记录初始状态 (n=0)
+        recordHistory();   // 记录0点，便于收敛图显示起点
+        refreshVisuals();
         animStatusSpan.innerText = '● 已重置';
         isAutoRunning = false;
     }
     
-    // 步进一次
+    // 单步前进
     function stepOnce() {
-        if (mcSampler.n >= maxN) {
+        if (mc.n >= maxN) {
             animStatusSpan.innerText = '● 已达上限';
             if (isAutoRunning) stopAutoRun();
             return;
         }
         addBatch();
-        if (mcSampler.n >= maxN) {
+        if (mc.n >= maxN) {
             animStatusSpan.innerText = '● 已完成';
             stopAutoRun();
         }
@@ -472,7 +597,7 @@
     // 自动运行
     function startAutoRun() {
         if (isAutoRunning) return;
-        if (mcSampler.n >= maxN) {
+        if (mc.n >= maxN) {
             animStatusSpan.innerText = '● 已完成';
             return;
         }
@@ -481,17 +606,17 @@
         if (autoInterval) clearInterval(autoInterval);
         autoInterval = setInterval(() => {
             if (!isAutoRunning) return;
-            if (mcSampler.n >= maxN) {
+            if (mc.n >= maxN) {
                 stopAutoRun();
                 animStatusSpan.innerText = '● 已完成';
                 return;
             }
             addBatch();
-            if (mcSampler.n >= maxN) {
+            if (mc.n >= maxN) {
                 stopAutoRun();
                 animStatusSpan.innerText = '● 已完成';
             }
-        }, 60);
+        }, 70);
     }
     
     function stopAutoRun() {
@@ -500,33 +625,31 @@
             autoInterval = null;
         }
         isAutoRunning = false;
-        if (mcSampler.n >= maxN) animStatusSpan.innerText = '● 已完成';
+        if (mc.n >= maxN) animStatusSpan.innerText = '● 已完成';
         else animStatusSpan.innerText = '● 已暂停';
     }
     
-    // 同步滑块显示
+    // 滑块同步
     function syncSliders() {
         maxN = parseInt(maxNSlider.value);
         maxNVal.innerText = maxN;
         stepSize = parseInt(stepSlider.value);
         stepVal.innerText = stepSize;
-        // 如果当前采样数已经超过新的maxN，则自动截断？最好提示重置，但简单处理：若当前N>maxN则提醒重置。
-        if (mcSampler.n > maxN) {
-            alert("当前样本数超过新设置的总样本数，建议重置采样。");
+        if (mc.n > maxN) {
+            alert("当前样本数超过新设定的总样本数，建议重置采样。");
         }
-        drawConvergence(); // 重绘调整x轴范围
+        // 更新收敛图x轴范围
+        updateConvergenceCurve();
+        refreshVisuals(); // 刷新使标题范围正确
     }
     
-    // 事件绑定
+    // 绑定事件
     function bindEvents() {
         startAutoBtn.addEventListener('click', startAutoRun);
         pauseBtn.addEventListener('click', stopAutoRun);
         stepBtn.addEventListener('click', stepOnce);
-        resetBtn.addEventListener('click', resetSamplers);
-        maxNSlider.addEventListener('input', () => {
-            syncSliders();
-            drawConvergence(); // 更新x轴范围
-        });
+        resetBtn.addEventListener('click', resetAll);
+        maxNSlider.addEventListener('input', () => { syncSliders(); });
         stepSlider.addEventListener('input', () => {
             stepSize = parseInt(stepSlider.value);
             stepVal.innerText = stepSize;
@@ -536,10 +659,13 @@
     // 初始化
     function init() {
         bindEvents();
-        resetSamplers();   // 初始记录0点并绘图
-        // 可选：自动演示一小段，但为了用户交互，不自动开始
-        // 添加初始提示
-        drawConvergence();
+        resetAll(); // 包括初始图表绘制
+        // 添加一段友好的初始演示引导
+        setTimeout(() => {
+            if (mc.n === 0) {
+                // 自动少量步进，展示动态效果 (可选，但可以通过用户启动)
+            }
+        }, 200);
     }
     
     init();
