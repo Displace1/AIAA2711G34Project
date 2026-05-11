@@ -1,0 +1,631 @@
+%% bare_conf_compsoc.tex
+%% V1.4b
+%% 2015/08/26
+%% by Michael Shell
+%% See:
+%% http://www.michaelshell.org/
+%% for current contact information.
+%%
+%% This is a skeleton file demonstrating the use of IEEEtran.cls
+%% (requires IEEEtran.cls version 1.8b or later) with an IEEE Computer
+%% Society conference paper.
+%%
+%% Support sites:
+%% http://www.michaelshell.org/tex/ieeetran/
+%% http://www.ctan.org/pkg/ieeetran
+%% and
+%% http://www.ieee.org/
+
+%%*************************************************************************
+%% Legal Notice:
+%% This code is offered as-is without any warranty either expressed or
+%% implied; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE! 
+%% User assumes all risk.
+%% In no event shall the IEEE or any contributor to this code be liable for
+%% any damages or losses, including, but not limited to, incidental,
+%% consequential, or any other damages, resulting from the use or misuse
+%% of any information contained here.
+%%
+%% All comments are the opinions of their respective authors and are not
+%% necessarily endorsed by the IEEE.
+%%
+%% This work is distributed under the LaTeX Project Public License (LPPL)
+%% ( http://www.latex-project.org/ ) version 1.3, and may be freely used,
+%% distributed and modified. A copy of the LPPL, version 1.3, is included
+%% in the base LaTeX documentation of all distributions of LaTeX released
+%% 2003/12/01 or later.
+%% Retain all contribution notices and credits.
+%% ** Modified files should be clearly indicated as such, including  **
+%% ** renaming them and changing author support contact information. **
+%%*************************************************************************
+
+
+% *** Authors should verify (and, if needed, correct) their LaTeX system  ***
+% *** with the testflow diagnostic prior to trusting their LaTeX platform ***
+% *** with production work. The IEEE's font choices and paper sizes can   ***
+% *** trigger bugs that do not appear when using other class files.       ***                          ***
+% The testflow support page is at:
+% http://www.michaelshell.org/tex/testflow/
+
+
+
+\documentclass[conference,compsoc]{IEEEtran}
+% Some/most Computer Society conferences require the compsoc mode option,
+% but others may want the standard conference format.
+%
+% If IEEEtran.cls has not been installed into the LaTeX system files,
+% manually specify the path to it like:
+% \documentclass[conference,compsoc]{../sty/IEEEtran}
+
+
+
+
+
+% Some very useful LaTeX packages include:
+% (uncomment the ones you want to load)
+
+
+% *** MISC UTILITY PACKAGES ***
+%
+%\usepackage{ifpdf}
+% Heiko Oberdiek's ifpdf.sty is very useful if you need conditional
+% compilation based on whether the output is pdf or dvi.
+% usage:
+% \ifpdf
+%   % pdf code
+% \else
+%   % dvi code
+% \fi
+% The latest version of ifpdf.sty can be obtained from:
+% http://www.ctan.org/pkg/ifpdf
+% Also, note that IEEEtran.cls V1.7 and later provides a builtin
+% \ifCLASSINFOpdf conditional that works the same way.
+% When switching from latex to pdflatex and vice-versa, the compiler may
+% have to be run twice to clear warning/error messages.
+
+
+
+
+
+
+% *** CITATION PACKAGES ***
+%
+\ifCLASSOPTIONcompsoc
+  % IEEE Computer Society needs nocompress option
+  % requires cite.sty v4.0 or later (November 2003)
+  \usepackage[nocompress]{cite}
+\else
+  % normal IEEE
+  \usepackage{cite}
+\fi
+% cite.sty was written by Donald Arseneau
+% V1.6 and later of IEEEtran pre-defines the format of the cite.sty package
+% \cite{} output to follow that of the IEEE. Loading the cite package will
+% result in citation numbers being automatically sorted and properly
+% "compressed/ranged". e.g., [1], [9], [2], [7], [5], [6] without using
+% cite.sty will become [1], [2], [5]--[7], [9] using cite.sty. cite.sty's
+% \cite will automatically add leading space, if needed. Use cite.sty's
+% noadjust option (cite.sty V3.8 and later) if you want to turn this off
+% such as if a citation ever needs to be enclosed in parenthesis.
+% cite.sty is already installed on most LaTeX systems. Be sure and use
+% version 5.0 (2009-03-20) and later if using hyperref.sty.
+% The latest version can be obtained at:
+% http://www.ctan.org/pkg/cite
+% The documentation is contained in the cite.sty file itself.
+%
+% Note that some packages require special options to format as the Computer
+% Society requires. In particular, Computer Society  papers do not use
+% compressed citation ranges as is done in typical IEEE papers
+% (e.g., [1]-[4]). Instead, they list every citation separately in order
+% (e.g., [1], [2], [3], [4]). To get the latter we need to load the cite
+% package with the nocompress option which is supported by cite.sty v4.0
+% and later.
+
+
+
+
+
+% *** GRAPHICS RELATED PACKAGES ***
+%
+\ifCLASSINFOpdf
+  % \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../pdf/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+  % will default to the driver specified in the system graphics.cfg if no
+  % driver is specified.
+  % \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+% graphicx was written by David Carlisle and Sebastian Rahtz. It is
+% required if you want graphics, photos, etc. graphicx.sty is already
+% installed on most LaTeX systems. The latest version and documentation
+% can be obtained at: 
+% http://www.ctan.org/pkg/graphicx
+% Another good source of documentation is "Using Imported Graphics in
+% LaTeX2e" by Keith Reckdahl which can be found at:
+% http://www.ctan.org/pkg/epslatex
+%
+% latex, and pdflatex in dvi mode, support graphics in encapsulated
+% postscript (.eps) format. pdflatex in pdf mode supports graphics
+% in .pdf, .jpeg, .png and .mps (metapost) formats. Users should ensure
+% that all non-photo figures use a vector format (.eps, .pdf, .mps) and
+% not a bitmapped formats (.jpeg, .png). The IEEE frowns on bitmapped formats
+% which can result in "jaggedy"/blurry rendering of lines and letters as
+% well as large increases in file sizes.
+%
+% You can find documentation about the pdfTeX application at:
+% http://www.tug.org/applications/pdftex
+
+
+
+
+
+% *** MATH PACKAGES ***
+%
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{url}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{enumitem}
+% A popular package from the American Mathematical Society that provides
+% many useful and powerful commands for dealing with mathematics.
+%
+% Note that the amsmath package sets \interdisplaylinepenalty to 10000
+% thus preventing page breaks from occurring within multiline equations. Use:
+%\interdisplaylinepenalty=2500
+% after loading amsmath to restore such page breaks as IEEEtran.cls normally
+% does. amsmath.sty is already installed on most LaTeX systems. The latest
+% version and documentation can be obtained at:
+% http://www.ctan.org/pkg/amsmath
+
+
+
+
+
+% *** SPECIALIZED LIST PACKAGES ***
+%
+%\usepackage{algorithmic}
+% algorithmic.sty was written by Peter Williams and Rogerio Brito.
+% This package provides an algorithmic environment fo describing algorithms.
+% You can use the algorithmic environment in-text or within a figure
+% environment to provide for a floating algorithm. Do NOT use the algorithm
+% floating environment provided by algorithm.sty (by the same authors) or
+% algorithm2e.sty (by Christophe Fiorio) as the IEEE does not use dedicated
+% algorithm float types and packages that provide these will not provide
+% correct IEEE style captions. The latest version and documentation of
+% algorithmic.sty can be obtained at:
+% http://www.ctan.org/pkg/algorithms
+% Also of interest may be the (relatively newer and more customizable)
+% algorithmicx.sty package by Szasz Janos:
+% http://www.ctan.org/pkg/algorithmicx
+
+
+
+
+% *** ALIGNMENT PACKAGES ***
+%
+%\usepackage{array}
+% Frank Mittelbach's and David Carlisle's array.sty patches and improves
+% the standard LaTeX2e array and tabular environments to provide better
+% appearance and additional user controls. As the default LaTeX2e table
+% generation code is lacking to the point of almost being broken with
+% respect to the quality of the end results, all users are strongly
+% advised to use an enhanced (at the very least that provided by array.sty)
+% set of table tools. array.sty is already installed on most systems. The
+% latest version and documentation can be obtained at:
+% http://www.ctan.org/pkg/array
+
+
+% IEEEtran contains the IEEEeqnarray family of commands that can be used to
+% generate multiline equations as well as matrices, tables, etc., of high
+% quality.
+
+
+
+
+% *** SUBFIGURE PACKAGES ***
+%\ifCLASSOPTIONcompsoc
+%  \usepackage[caption=false,font=footnotesize,labelfont=sf,textfont=sf]{subfig}
+%\else
+%  \usepackage[caption=false,font=footnotesize]{subfig}
+%\fi
+% subfig.sty, written by Steven Douglas Cochran, is the modern replacement
+% for subfigure.sty, the latter of which is no longer maintained and is
+% incompatible with some LaTeX packages including fixltx2e. However,
+% subfig.sty requires and automatically loads Axel Sommerfeldt's caption.sty
+% which will override IEEEtran.cls' handling of captions and this will result
+% in non-IEEE style figure/table captions. To prevent this problem, be sure
+% and invoke subfig.sty's "caption=false" package option (available since
+% subfig.sty version 1.3, 2005/06/28) as this is will preserve IEEEtran.cls
+% handling of captions.
+% Note that the Computer Society format requires a sans serif font rather
+% than the serif font used in traditional IEEE formatting and thus the need
+% to invoke different subfig.sty package options depending on whether
+% compsoc mode has been enabled.
+%
+% The latest version and documentation of subfig.sty can be obtained at:
+% http://www.ctan.org/pkg/subfig
+
+
+
+
+% *** FLOAT PACKAGES ***
+%
+%\usepackage{fixltx2e}
+% fixltx2e, the successor to the earlier fix2col.sty, was written by
+% Frank Mittelbach and David Carlisle. This package corrects a few problems
+% in the LaTeX2e kernel, the most notable of which is that in current
+% LaTeX2e releases, the ordering of single and double column floats is not
+% guaranteed to be preserved. Thus, an unpatched LaTeX2e can allow a
+% single column figure to be placed prior to an earlier double column
+% figure.
+% Be aware that LaTeX2e kernels dated 2015 and later have fixltx2e.sty's
+% corrections already built into the system in which case a warning will
+% be issued if an attempt is made to load fixltx2e.sty as it is no longer
+% needed.
+% The latest version and documentation can be found at:
+% http://www.ctan.org/pkg/fixltx2e
+
+
+%\usepackage{stfloats}
+% stfloats.sty was written by Sigitas Tolusis. This package gives LaTeX2e
+% the ability to do double column floats at the bottom of the page as well
+% as the top. (e.g., "\begin{figure*}[!b]" is not normally possible in
+% LaTeX2e). It also provides a command:
+%\fnbelowfloat
+% to enable the placement of footnotes below bottom floats (the standard
+% LaTeX2e kernel puts them above bottom floats). This is an invasive package
+% which rewrites many portions of the LaTeX2e float routines. It may not work
+% with other packages that modify the LaTeX2e float routines. The latest
+% version and documentation can be obtained at:
+% http://www.ctan.org/pkg/stfloats
+% Do not use the stfloats baselinefloat ability as the IEEE does not allow
+% \baselineskip to stretch. Authors submitting work to the IEEE should note
+% that the IEEE rarely uses double column equations and that authors should try
+% to avoid such use. Do not be tempted to use the cuted.sty or midfloat.sty
+% packages (also by Sigitas Tolusis) as the IEEE does not format its papers in
+% such ways.
+% Do not attempt to use stfloats with fixltx2e as they are incompatible.
+% Instead, use Morten Hogholm'a dblfloatfix which combines the features
+% of both fixltx2e and stfloats:
+%
+% \usepackage{dblfloatfix}
+% The latest version can be found at:
+% http://www.ctan.org/pkg/dblfloatfix
+
+
+
+
+% *** PDF, URL AND HYPERLINK PACKAGES ***
+%
+%\usepackage{url}
+% url.sty was written by Donald Arseneau. It provides better support for
+% handling and breaking URLs. url.sty is already installed on most LaTeX
+% systems. The latest version and documentation can be obtained at:
+% http://www.ctan.org/pkg/url
+% Basically, \url{my_url_here}.
+
+
+
+
+% *** Do not adjust lengths that control margins, column widths, etc. ***
+% *** Do not use packages that alter fonts (such as pslatex).         ***
+% There should be no need to do such things with IEEEtran.cls V1.6 and later.
+% (Unless specifically asked to do so by the journal or conference you plan
+% to submit to, of course. )
+
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+
+\begin{document}
+%
+% paper title
+% Titles are generally capitalized except for words such as a, an, and, as,
+% at, but, by, for, in, nor, of, on, or, the, to and up, which are usually
+% not capitalized unless they are the first or last word of the title.
+% Linebreaks \\ can be used within to get better formatting as desired.
+% Do not put math or special symbols in the title.
+\title{Importance Sampling Project Report}
+
+
+% author names and affiliations
+% use a multiple column layout for up to three different
+% affiliations
+\author{\IEEEauthorblockN{Yuncong Wang}
+\IEEEauthorblockA{}
+\and
+\IEEEauthorblockN{Xiangqian Wang}
+\IEEEauthorblockA{}
+\and
+\IEEEauthorblockN{Qingfeng Li}
+\IEEEauthorblockA{}}
+
+% conference papers do not typically use \thanks and this command
+% is locked out in conference mode. If really needed, such as for
+% the acknowledgment of grants, issue a \IEEEoverridecommandlockouts
+% after \documentclass
+
+% for over three affiliations, or if they all won't fit within the width
+% of the page (and note that there is less available width in this regard for
+% compsoc conferences compared to traditional conferences), use this
+% alternative format:
+% 
+%\author{\IEEEauthorblockN{Michael Shell\IEEEauthorrefmark{1},
+%Homer Simpson\IEEEauthorrefmark{2},
+%James Kirk\IEEEauthorrefmark{3}, 
+%Montgomery Scott\IEEEauthorrefmark{3} and
+%Eldon Tyrell\IEEEauthorrefmark{4}}
+%\IEEEauthorblockA{\IEEEauthorrefmark{1}School of Electrical and Computer Engineering\\
+%Georgia Institute of Technology,
+%Atlanta, Georgia 30332--0250\\ Email: see http://www.michaelshell.org/contact.html}
+%\IEEEauthorblockA{\IEEEauthorrefmark{2}Twentieth Century Fox, Springfield, USA\\
+%Email: homer@thesimpsons.com}
+%\IEEEauthorblockA{\IEEEauthorrefmark{3}Starfleet Academy, San Francisco, California 96678-2391\\
+%Telephone: (800) 555--1212, Fax: (888) 555--1212}
+%\IEEEauthorblockA{\IEEEauthorrefmark{4}Tyrell Inc., 123 Replicant Street, Los Angeles, California 90210--4321}}
+
+
+
+
+% use for special paper notices
+%\IEEEspecialpapernotice{(Invited Paper)}
+
+% make the title area
+\maketitle
+
+% As a general rule, do not put math, special symbols or citations
+% in the abstract
+\begin{abstract}
+Importance Sampling (IS) is a fundamental Monte Carlo technique for estimating expectations under intractable target distributions. Instead of sampling directly from the target distribution \(p(x)\), which is often difficult or impossible, IS samples from an easy-to-sample proposal distribution \(q(x)\) and corrects the bias using importance weights. This report introduces the mathematical derivation, core properties, applications in reinforcement learning, and four key experimental validations. Experiments show that IS effectively reduces variance with an optimal proposal, accurately approximates multimodal distributions, avoids tail weight explosion with heavy-tailed proposals, and suffers from weight collapse in high dimensions. Importance Sampling remains an essential tool for off-policy evaluation, Bayesian inference, and rare-event simulation in modern AI \cite{robert2004monte, mcbook, sugiyama2015statistical}.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Importance Sampling, Monte Carlo Methods, Variance Reduction, Off-Policy Evaluation, Reinforcement Learning.
+\end{IEEEkeywords}
+
+% For peer review papers, you can put extra information on the cover
+% page as needed:
+% \ifCLASSOPTIONpeerreview
+% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+% \fi
+%
+% For peerreview papers, this IEEEtran command inserts a page break and
+% creates the second title. It will be ignored for other modes.
+\IEEEpeerreviewmaketitle
+
+
+
+\section{Introduction}
+In machine learning, statistical computing, and probabilistic modeling, estimating the expectation of a function \(f(x)\) with respect to a target probability distribution \(p(x)\) is a fundamental and ubiquitous task \cite{robert2004monte, mcbook}. Mathematically, this expectation is defined as:
+\[
+\mathbb{E}_{p}[f(x)] = \int f(x)\,p(x)\,dx.
+\]
+However, in many real-world scenarios, directly sampling from \(p(x)\) is infeasible due to complex density structures, multimodality, intractable normalization constants, or extremely high dimensionality \cite{robert2004monte}. Standard Monte Carlo methods fail in such settings because they cannot efficiently generate valid samples from the target distribution.
+
+To overcome this critical limitation, Importance Sampling (IS) has become one of the most widely used variance reduction techniques in Monte Carlo estimation \cite{mcbook}. Instead of sampling directly from \(p(x)\), IS draws samples from an easy-to-sample proposal distribution \(q(x)\) and corrects the distribution mismatch using importance weights \(w(x) = p(x)/q(x)\). By properly reweighting the samples, IS accurately recovers the original expectation under \(p(x)\) \cite{robert2004monte}.
+
+Owing to its flexibility and effectiveness, IS plays an indispensable role in numerous modern AI applications, including off-policy reinforcement learning \cite{sugiyama2015statistical}, Bayesian inference, rare-event simulation, and approximate computation. In this report, we present the mathematical derivation of IS, analyze its statistical properties, investigate its behavior in high-dimensional spaces, and validate its performance through four controlled experiments. Our results highlight how proposal design affects variance, tail stability, sample efficiency, and convergence behavior.
+
+\section{Mathematical Foundation}
+\subsection{Core Derivation}
+The core idea of Importance Sampling is to transform the intractable expectation under target distribution \(p(x)\) into a tractable one under a proposal distribution \(q(x)\). The key mathematical step is to rewrite the original expectation by multiplying and dividing the integrand by \(q(x)\), which is valid as long as \(q(x) > 0\) whenever \(p(x) > 0\) to avoid division by zero \cite{robert2004monte,mcbook}. The derivation proceeds as follows:
+\begin{align*}
+\mathbb{E}_{p}[f(x)] 
+&= \int f(x)\,p(x)\,dx \\
+&= \int f(x)\,\frac{p(x)}{q(x)}\,q(x)\,dx \\
+&= \mathbb{E}_{q}\left[\,f(x)\cdot \frac{p(x)}{q(x)}\,\right].
+\end{align*}
+In this reformulation, the expectation is now taken with respect to the proposal \(q(x)\), which can be freely chosen to be easy to sample from. This simple yet powerful transformation enables Monte Carlo estimation even when direct sampling from \(p(x)\) is impossible.
+
+\subsection{Importance Weight}
+From the derivation above, we observe that the ratio between the target distribution \(p(x)\) and the proposal distribution \(q(x)\) acts as a correction factor that adjusts each sample to reflect the true target distribution. We therefore define this ratio as the \emph{importance weight}:
+\[
+w(x) = \frac{p(x)}{q(x)}.
+\]
+Intuitively, the importance weight measures how representative a sample drawn from \(q(x)\) is relative to the target \(p(x)\). Samples that are more probable under \(p(x)\) than under \(q(x)\) receive higher weights, while those that are over-represented by the proposal are downweighted accordingly.
+
+\subsection{Monte Carlo Estimation}
+Using the importance weights, we can construct a Monte Carlo estimator for the target expectation. Given \(N\) independent and identically distributed samples \(x_i \sim q(x)\), the standard Importance Sampling estimator is given by:
+\[
+\hat{\mathbb{E}}_{p}[f] = \frac{1}{N}\sum_{i=1}^N f(x_i)\,w(x_i).
+\]
+A key theoretical property of this estimator is that it is \emph{unbiased} as long as the support condition holds: \(q(x) > 0\) for all \(x\) where \(p(x) > 0\). This ensures that no region of the target distribution is neglected by the proposal, which is essential for stable and accurate estimation.
+
+\section{Application: Off-policy Reinforcement Learning}
+One of the most influential applications of Importance Sampling is in off-policy reinforcement learning (RL), where it serves as a fundamental theoretical building block for modern state-of-the-art algorithms such as Proximal Policy Optimization (PPO) and Trust Region Policy Optimization (TRPO) \cite{schulman2017proximal, schulman2015trust}. Off-policy evaluation aims to assess the performance of a \emph{new target policy} \(\pi_{\text{new}}\) without collecting new environmental interactions, using only trajectory data previously generated by an \emph{old behavior policy} \(\pi_{\text{old}}\) \cite{sugiyama2015statistical,precup2000eligibility}.
+
+By reweighting the collected trajectories, Importance Sampling corrects the distribution shift between the two policies. The policy performance objective can be rewritten as:
+\[
+J(\pi_{\text{new}}) = \mathbb{E}_{\tau\sim\pi_{\text{old}}}\!\left[\,R(\tau)\cdot \frac{p_{\text{new}}(\tau)}{p_{\text{old}}(\tau)}\,\right],
+\]
+where \(\tau\) denotes a full trajectory of states and actions, \(R(\tau)\) represents the accumulated reward of the trajectory, and the importance weight \(\frac{p_{\text{new}}(\tau)}{p_{\text{old}}(\tau)}\) adjusts the contribution of each trajectory to match the new policy. This technique enables safe, efficient, and low-cost policy evaluation, which is crucial for real-world RL systems such as robotics, recommendation systems, and autonomous control.
+
+
+\section{EXPERIMENTS AND RESULTS}
+All experiments use \texttt{Python}~3 with \texttt{NumPy}/\texttt{SciPy}, random seed \(42\), and the scripts under \texttt{experiment/A/src/}, \ldots, \texttt{experiment/D/src/}. Sample sizes and repetition counts \(M\) match those scripts unless noted.
+
+\subsection{Experiment A: Variance under optimal, uniform, and mismatched proposals}
+\textbf{Problem.} We estimate \(I=\int_0^1 e^x\,dx=e-1\) as \(\mathbb{E}_p[f(X)]\) with \(p(x)=\mathbb{I}_{[0,1]}(x)\) and \(f(x)=e^x\). We compare: (i)~direct Monte Carlo with \(X\sim\mathrm{Unif}(0,1)\); (ii)~IS with \(q_{\mathrm{opt}}(x)=(e-1)^{-1}e^x\) on \([0,1]\), so \(f(x)w(x)\) is constant and the theoretical variance is zero up to floating-point error; (iii)~IS with \(q_{\mathrm{bad}}(x)=2x\) on \([0,1]\), which places little mass near \(0\) where \(p/q\) is large.
+
+\textbf{Procedure.} Sample sizes \(N\in\{10,30,100,300,1000,3000,10000\}\). For each~\(N\), we run \(M=1000\) independent replications and record the empirical variance of the estimate across replications and the mean estimate versus~\(N\).
+
+\textbf{Results.} Figure~\ref{fig:expA} shows variance on log--log axes and mean convergence. Optimal IS tracks the true value \(e-1\) with negligible spread even for small \(N\). Direct MC follows the usual \(\propto 1/N\) variance decay. The bad linear proposal yields higher variance than direct MC because weights explode when samples fall near \(0\). Figure~\ref{fig:expAweights} contrasts weight histograms for one run at \(N{=}1000\): optimal weights concentrate tightly, whereas the bad proposal induces a long right tail in \(w(x)=1/(2x)\) (plot clipped for readability).
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{experiment1_results.png}
+\caption{Experiment~A: empirical variance vs.\ \(N\) (left) and mean estimate vs.\ \(N\) (right) for direct MC, optimal IS, and mismatched IS.}
+\label{fig:expA}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{experiment1_weights.png}
+\caption{Experiment~A: distributions of importance weights for optimal vs.\ bad proposals (\(N{=}1000\), single run).}
+\label{fig:expAweights}
+\end{figure}
+
+\subsection{Experiment B: Gaussian mixture---direct sampling, rejection sampling, and NIS}
+\textbf{Target.} \(p(x)=0.3\,\mathcal{N}(x;4,1)+0.7\,\mathcal{N}(x;7,0.5)\), where the second Gaussian has variance \(0.5\) (\texttt{scipy} scale \(\sqrt{0.5}\)). The exact mean is \(\mathbb{E}_p[X]=0.3\cdot 4+0.7\cdot 7=6.1\).
+
+\textbf{Methods.} (i)~Direct Monte Carlo: sample from the mixture. (ii)~Rejection sampling: proposal \(\mathcal{N}(6,3^2)\) with envelope constant \(M=2.5\) (verified to dominate \(p/q_{\mathrm{rs}}\)). We record the fraction of proposals accepted when generating \(N\) samples. (iii)~Self-normalized IS: proposal Student-\(t\) with \(\nu=5\), location \(6\), scale \(2\); estimate \(\sum_i X_i w_i/\sum_i w_i\) with \(w_i=p(x_i)/q(x_i)\).
+
+\textbf{Procedure.} Sample sizes \(N\in\{100,300,1000,3000,10000\}\); \(M=500\) replications per~\(N\).
+
+\textbf{Results.} Figure~\ref{fig:expBhist} compares normalized histograms to \(p(x)\): direct sampling matches the bimodal shape; rejection sampling matches after accepting a random subset; IS matches the target density when bins are weighted by \(w_i\). Figure~\ref{fig:expBvar} shows empirical variance of the mean estimate versus \(N\): all three methods improve with \(N\), but rejection sampling incurs extra proposals when acceptance is below one. Figure~\ref{fig:expBmean} confirms unbiased mean convergence toward \(6.1\) for all three estimators.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{experiment2_histograms.png}
+\caption{Experiment~B: density recovery---direct samples, rejection samples, and weighted IS histograms vs.\ \(p(x)\).}
+\label{fig:expBhist}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{experiment2_variance.png}
+\caption{Experiment~B: empirical variance of the estimated mean vs.\ sample size \(N\) (log--log).}
+\label{fig:expBvar}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{experiment2_means.png}
+\caption{Experiment~B: mean estimate vs.\ \(N\) compared to the true mean \(6.1\).}
+\label{fig:expBmean}
+\end{figure}
+
+\subsection{Experiment C: Tail-sensitive functional under a mixture target}
+\textbf{Target and quantity.} We use
+\begin{equation}
+\begin{aligned}
+p(x) &= 0.9\,\mathcal{N}(x;0,1) \\
+&{}+ 0.1\,\mathcal{N}(x;10,0.5^2).
+\end{aligned}
+\end{equation}
+and estimate \(\theta=\mathbb{E}_p\bigl[X\,\mathbb{I}\{X>8\}\bigr]\). The reference value \(\theta\approx 0.999975\) is obtained by numerical integration (\texttt{scipy.integrate.quad}).
+
+\textbf{Proposals.} Good: Student-\(t\) with \(\nu=3\), location \(8\), scale \(1.5\) (heavier tails). Bad: \(\mathcal{N}(8,1)\). We use the standard unbiased IS estimator \(\hat\theta=\frac{1}{N}\sum_i X_i\mathbb{I}\{X_i>8\}\,w_i\) with \(w_i=p(x_i)/q(x_i)\).
+
+\textbf{Procedure.} Sample sizes \(N\in\{2000,5000,\ldots,200000\}\) as in the script; \(M=200\) replications per~\(N\).
+
+\textbf{Results.} Figure~\ref{fig:expCvar} shows variance across replications: the heavy-tailed proposal yields variance that shrinks steadily with \(N\), whereas the Gaussian proposal produces much larger and noisier variance. Figure~\ref{fig:expCmean} shows mean estimates versus \(N\): the good proposal tracks \(\theta\) closely, while the bad proposal oscillates. Figure~\ref{fig:expCw} displays histograms of weights restricted to samples with \(X>8\); the bad proposal induces a heavier tail of extreme weights. Figure~\ref{fig:expCdens} compares \(p(x)\) to proposal densities on a log scale for tail context.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{tail_exp_variance.png}
+\caption{Experiment~C: empirical variance of \(\hat\theta\) vs.\ \(N\) for heavy-tailed vs.\ Gaussian proposals.}
+\label{fig:expCvar}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{tail_exp_means.png}
+\caption{Experiment~C: mean estimate of \(\theta\) vs.\ \(N\) vs.\ numerical ground truth.}
+\label{fig:expCmean}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{tail_exp_weights.png}
+\caption{Experiment~C: weight histograms for samples with \(X>8\) (single large-\(N\) run; axes clipped for display).}
+\label{fig:expCw}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{tail_exp_density_comparison.png}
+\caption{Experiment~C: target mixture \(p(x)\) vs.\ proposal densities (log scale).}
+\label{fig:expCdens}
+\end{figure}
+
+\subsection{Experiment D: High-dimensional ESS---ideal vs.\ offset Gaussian proposal}
+\textbf{Setup.} Target \(p=\mathcal{N}(\mathbf{0},\mathbf{I}_d)\). We draw \(m=2000\) samples from two proposals: (i)~\(q=p\) (ideal), giving weights identically one up to numerical error; (ii)~\(q=\mathcal{N}(a\mathbf{1},\mathbf{I}_d)\) with \(a=0.5\) on every coordinate, inducing a systematic mismatch that grows with \(d\).
+
+\textbf{Metric.} We report \(\mathrm{ESS}/m\) with \(\mathrm{ESS}=(\sum_i w_i)^2/\sum_i w_i^2\) and \(w_i=p(x_i)/q(x_i)\).
+
+\textbf{Results.} Figure~\ref{fig:expD} shows \(\mathrm{ESS}/m\) vs.\ \(d\in\{1,2,5,10,50,100,1000\}\) on a log scale. Under \(q=p\), the ratio stays near one for all tested dimensions. Under the offset proposal, \(\mathrm{ESS}/m\) collapses orders of magnitude as \(d\) increases, illustrating weight concentration and the difficulty of naive IS in high dimensions even when \(p\) and \(q\) are both simple Gaussians.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{importance_sampling_ideal_vs_offset.png}
+\caption{Experiment~D: \(\mathrm{ESS}/m\) vs.\ dimension for ideal \(q=p\) vs.\ mean-shifted Gaussian (\(a=0.5\)), \(m=2000\) samples.}
+\label{fig:expD}
+\end{figure}
+
+\section{Discussion}
+\begin{itemize}
+    \item The proposal distribution \(q(x)\) must envelope \(p(x)\) and have heavier tails.
+    \item IS is sample-efficient because it does not discard data.
+    \item IS suffers from weight collapse and high variance in high dimensions.
+    \item Advanced variants: Normalized IS, Sequential IS, Particle Filters.\cite{jiang2016doubly}
+\end{itemize}
+
+\section{Conclusion}
+Importance Sampling is a powerful variance-reduction technique for expectation estimation, not a generative model. It bridges intractable target distributions and easy-to-sample proposals, supporting key advances in off-policy reinforcement learning, rare-event simulation, and approximate Bayesian computation. Despite limitations in high dimensions, IS remains indispensable for reliable statistical estimation in AI.
+
+
+
+% conference papers do not normally have an appendix
+
+
+
+% use section* for acknowledgment
+\ifCLASSOPTIONcompsoc
+  % The Computer Society usually uses the plural form
+  \section*{Acknowledgments}
+\else
+  % regular IEEE prefers the singular form
+  \section*{Acknowledgment}
+\fi
+
+
+The authors would like to thank...
+
+
+
+
+
+% trigger a \newpage just before the given reference
+% number - used to balance the columns on the last page
+% adjust value as needed - may need to be readjusted if
+% the document is modified later
+%\IEEEtriggeratref{8}
+% The "triggered" command can be changed if desired:
+%\IEEEtriggercmd{\enlargethispage{-5in}}
+
+% references section
+
+% can use a bibliography generated by BibTeX as a .bbl file
+% BibTeX documentation can be easily obtained at:
+% http://mirror.ctan.org/biblio/bibtex/contrib/doc/
+% The IEEEtran BibTeX style support page is at:
+% http://www.michaelshell.org/tex/ieeetran/bibtex/
+%\bibliographystyle{IEEEtran}
+% argument is your BibTeX string definitions and bibliography database(s)
+%\bibliography{IEEEabrv,../bib/paper}
+%
+% <OR> manually copy in the resultant .bbl file
+% set second argument of \begin to the number of references
+% (used to reserve space for the reference number labels box)
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+% that's all folks
+\end{document}
